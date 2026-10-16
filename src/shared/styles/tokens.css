@@ -1,0 +1,11 @@
+:root {
+  --color-background: #f4deb0;
+  --color-surface: #f8e9c9;
+  --color-text: #27190f;
+  --color-muted: #5e4934;
+  --color-accent: #b42018;
+  --color-green: #2c643b;
+  --color-line: #c7a671;
+  --font-display: var(--font-brush), 'Segoe Print', cursive;
+  --space-page: clamp(1.1rem, 3.5vw, 3rem);
+}
