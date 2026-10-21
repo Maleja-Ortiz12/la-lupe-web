@@ -12,7 +12,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test test/*.test.tsx",
-    "test:layout": "node scripts/check-layout.mjs"
+    "test:layout": "node scripts/check-layout.mjs",
+    "test:whatsapp": "node scripts/check-whatsapp.mjs",
+    "test:cart": "node scripts/check-cart.mjs"
   },
   "dependencies": {
     "next": "16.4.2",

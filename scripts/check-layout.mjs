@@ -105,6 +105,7 @@ try {
           floating: (() => { const element = document.querySelector('.whatsapp-float'); if (!element) return null; const button = element.querySelector('.whatsapp-float-button'); return { ...rect(element), position: getComputedStyle(element).position, disabled: button.disabled, destination: element.querySelector('a')?.href || null }; })(),
           viewportHeight: innerHeight,
           corner: (() => { const leaves = document.querySelector('.corner-leaves'), side = document.querySelector('.hero-side-textile'), hero = document.querySelector('#inicio'); if (!leaves || !side) return null; const l = rect(leaves), s = rect(side), h = rect(hero); return { leavesLeft: l.left, leavesTop: l.top + scrollY, leavesVisible: getComputedStyle(leaves).display !== 'none' && l.width > 20, sideLeft: s.left, sideWidth: s.width, sideCoversHero: s.top <= h.top + 2 && s.bottom >= h.bottom - 2, sideBg: getComputedStyle(side).backgroundImage }; })(),
+          essenceStory: (() => { const section = document.querySelector('#nosotros'); return { disclaimer: section.textContent.includes('Historia de ejemplo · No corresponde a la historia real del restaurante'), cards: [...section.querySelectorAll('.essence-story-card')].map(rect), captions: section.querySelectorAll('.essence-story-card figcaption').length }; })(),
           logoCount: document.querySelectorAll('img[src*="la-lupe"],img[srcset*="la-lupe"]').length
         };
       })()`,
@@ -125,6 +126,7 @@ try {
     assert.ok(details.scrollWidth <= details.clientWidth, `${name}: horizontal overflow`);
     assert.ok(details.imagesLoaded, `${name}: image failed to load`);
     assert.equal(details.logoCount, 3, `${name}: original logos missing`);
+    assert.equal(details.essenceStory.cards.length, 0, `${name}: full story belongs on its own page`);
     assert.ok(!details.headingFont.includes('Trebuchet'), `${name}: brush font missing`);
     assert.equal(details.sections.map(section => section.id).join(','), 'inicio,carta,nosotros,contacto');
     assert.ok(details.heroFontReady && details.readingFontReady && details.motion.name === 'whatsapp-float' && details.motion.halo === 'whatsapp-halo', `${name}: requested typography/animation missing ${JSON.stringify({ hero: details.heroFontReady, reading: details.readingFontReady, motion: details.motion })}`);
@@ -174,7 +176,71 @@ try {
     observation.reducedMotion = reduced.result.value;
     writeFileSync(path.join(output, `${label}-metrics.json`), JSON.stringify(observations, null, 2));
     await cdp('Emulation.setEmulatedMedia', { features: [] });
-    console.log(`PASS ${name} (${width}px): full width, typography, disabled animated WhatsApp and reduced motion checked`);
+    const essenceLoaded = new Promise(resolve => events.set('Page.loadEventFired', resolve));
+    await cdp('Page.navigate', { url: new URL('/nuestra-esencia', target).href });
+    await essenceLoaded;
+    const essence = await cdp('Runtime.evaluate', {
+      expression: `(async () => {
+        await document.fonts.ready;
+        await Promise.all([...document.images].map(async image => { image.loading = 'eager'; await image.decode().catch(() => {}); }));
+        const cards = [...document.querySelectorAll('.essence-story-card')].map(element => { const r = element.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; });
+        return {
+          cards, width: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth,
+          images: [...document.images].every(image => image.complete && image.naturalWidth > 0),
+          current: document.querySelector('.site-header [aria-current="page"]')?.getAttribute('href'),
+          contact: document.querySelector('.site-header .button-small')?.getAttribute('href'),
+          disclaimer: document.querySelector('#nosotros').textContent.includes('Historia de ejemplo · No corresponde a la historia real del restaurante'),
+          headingCount: document.querySelectorAll('h1').length
+        };
+      })()`, awaitPromise: true, returnByValue: true,
+    });
+    if (essence.exceptionDetails) throw new Error(JSON.stringify(essence.exceptionDetails));
+    const story = essence.result.value;
+    assert.equal(story.current, '/nuestra-esencia');
+    assert.equal(story.contact, '/#contacto');
+    assert.equal(story.headingCount, 1);
+    assert.ok(story.images && story.disclaimer && story.scrollWidth <= story.width, `${name}: essence images, disclaimer or width failed`);
+    assert.equal(story.cards.length, 3);
+    for (const card of story.cards) assert.ok(card.left >= 0 && card.right <= story.width, `${name}: essence card outside viewport`);
+    if (name === 'mobile') assert.ok(story.cards[1].top >= story.cards[0].bottom && story.cards[2].top >= story.cards[1].bottom, 'mobile: essence cards must stack');
+    observation.essencePage = story;
+    const essenceMetrics = await cdp('Page.getLayoutMetrics');
+    const essenceScreenshot = await cdp('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip: { x: 0, y: 0, width, height: Math.ceil(essenceMetrics.cssContentSize.height), scale: 1 } });
+    writeFileSync(path.join(output, `${label}-essence-${name}.png`), Buffer.from(essenceScreenshot.data, 'base64'));
+    writeFileSync(path.join(output, `${label}-metrics.json`), JSON.stringify(observations, null, 2));
+    const visitLoaded = new Promise(resolve => events.set('Page.loadEventFired', resolve));
+    await cdp('Page.navigate', { url: new URL('/visitanos', target).href });
+    await visitLoaded;
+    const visit = await cdp('Runtime.evaluate', {
+      expression: `(async () => {
+        await document.fonts.ready;
+        const map = document.querySelector('.visit-map');
+        map.scrollIntoView({ block: 'center' });
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const r = map.getBoundingClientRect();
+        return {
+          address: document.querySelector('address').textContent,
+          current: document.querySelector('.site-header [aria-current="page"]')?.getAttribute('href'),
+          width: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth,
+          map: { left: r.left, right: r.right, width: r.width, height: r.height, src: map.src },
+          directions: document.querySelector('.visit-info .button').href,
+          fallback: Boolean(document.querySelector('.visit-map-link'))
+        };
+      })()`, awaitPromise: true, returnByValue: true,
+    });
+    if (visit.exceptionDetails) throw new Error(JSON.stringify(visit.exceptionDetails));
+    const visitDetails = visit.result.value;
+    assert.equal(visitDetails.address, 'Cl. 2 #11-80, Chía, Cundinamarca');
+    assert.equal(visitDetails.current, '/visitanos');
+    assert.ok(visitDetails.scrollWidth <= visitDetails.width && visitDetails.map.left >= 0 && visitDetails.map.right <= visitDetails.width, `${name}: visit map overflow`);
+    assert.ok(visitDetails.map.height >= 340 && visitDetails.map.width > 200 && visitDetails.fallback, `${name}: visit map or fallback missing`);
+    assert.ok(visitDetails.directions.includes('destination=4.8533766%2C-74.0645729'));
+    observation.visitPage = visitDetails;
+    const visitMetrics = await cdp('Page.getLayoutMetrics');
+    const visitScreenshot = await cdp('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip: { x: 0, y: 0, width, height: Math.ceil(visitMetrics.cssContentSize.height), scale: 1 } });
+    writeFileSync(path.join(output, `${label}-visit-${name}.png`), Buffer.from(visitScreenshot.data, 'base64'));
+    writeFileSync(path.join(output, `${label}-metrics.json`), JSON.stringify(observations, null, 2));
+    console.log(`PASS ${name} (${width}px): home, essence and visit page, map layout, address and route link checked`);
   }
   await send('Browser.close');
 } catch (error) {

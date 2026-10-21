@@ -2,24 +2,56 @@ import Image from 'next/image';
 import { ActionIcon } from './action-icon';
 import { MexicanOrnament } from './mexican-ornament';
 import { CornerLeaves } from './corner-leaves';
+import { FloatingWhatsApp } from './floating-whatsapp';
+import { contact, whatsappMessages, whatsappUrl } from '@/shared/config/contact';
 
-const links = [
-  ['#inicio', 'Inicio'],
-  ['#carta', 'Menú'],
-  ['#nosotros', 'Nuestra esencia'],
-  ['#contacto', 'Visítanos'],
-] as const;
+export type SitePage = 'home' | 'menu' | 'essence' | 'visit';
 
-export function Brand({ footer = false }: { footer?: boolean }) {
+const links = {
+  home: [
+    ['#inicio', 'Inicio'],
+    ['/menu', 'Menú'],
+    ['/nuestra-esencia', 'Nuestra esencia'],
+    ['/visitanos', 'Visítanos'],
+  ],
+  essence: [
+    ['/#inicio', 'Inicio'],
+    ['/menu', 'Menú'],
+    ['/nuestra-esencia', 'Nuestra esencia'],
+    ['/visitanos', 'Visítanos'],
+  ],
+  visit: [
+    ['/#inicio', 'Inicio'],
+    ['/menu', 'Menú'],
+    ['/nuestra-esencia', 'Nuestra esencia'],
+    ['/visitanos', 'Visítanos'],
+  ],
+  menu: [
+    ['/#inicio', 'Inicio'],
+    ['/menu', 'Menú'],
+    ['/nuestra-esencia', 'Nuestra esencia'],
+    ['/visitanos', 'Visítanos'],
+  ],
+} as const;
+
+const currentHref = { home: '#inicio', menu: '/menu', essence: '/nuestra-esencia', visit: '/visitanos' } as const;
+
+function NavLinks({ page, current = false }: { page: SitePage; current?: boolean }) {
+  return links[page].map(([href, label]) => (
+    <a href={href} key={href} aria-current={current && href === currentHref[page] ? 'page' : undefined}>{label}</a>
+  ));
+}
+
+export function Brand({ footer = false, page = 'home' }: { footer?: boolean; page?: SitePage }) {
   return (
-    <a className={`brand${footer ? ' brand-footer' : ''}`} href="#inicio" aria-label="La Lupe, ir al inicio">
+    <a className={`brand${footer ? ' brand-footer' : ''}`} href={page === 'home' ? '#inicio' : '/'} aria-label="La Lupe, ir al inicio">
       <span className="brand-logo-frame"><Image className="brand-logo" src="/brand/la-lupe.png" width={150} height={150} sizes="150px" loading="eager" alt="Logotipo original de La Lupe · Cocina mexicana" /></span>
       {footer && <span className="brand-name">LA LUPE<small>COCINA MEXICANA</small></span>}
     </a>
   );
 }
 
-export function SiteHeader() {
+export function SiteHeader({ page = 'home' }: { page?: SitePage }) {
   return (
     <>
       <a className="skip-link" href="#contenido">Saltar al contenido</a>
@@ -29,31 +61,34 @@ export function SiteHeader() {
         <CornerLeaves />
         <div className="textile-top" aria-hidden="true" />
         <div className="container header-inner">
-          <Brand />
+          <Brand page={page} />
           <nav aria-label="Navegación principal">
-            {links.map(([href, label]) => <a href={href} key={href}>{label}</a>)}
+            <NavLinks page={page} current />
           </nav>
-          <a className="button button-small" href="#contacto"><ActionIcon kind="contact" />Contáctanos</a>
+          {page !== 'menu' && <a className="button button-small" href={page === 'home' ? '#contacto' : '/#contacto'}><ActionIcon kind="contact" />Contáctanos</a>}
         </div>
       </header>
     </>
   );
 }
 
-export function SiteFooter() {
+export function SiteFooter({ page = 'home', whatsappHref = whatsappUrl(contact.whatsappNumber, whatsappMessages.info) }: { page?: SitePage; whatsappHref?: string | null }) {
   return (
+    <>
     <footer className="site-footer">
       <div className="container footer-inner">
-        <Brand footer />
+        <Brand footer page={page} />
         <p>Propuesta de presentación<br />para La Lupe · Cocina mexicana.</p>
         <div className="footer-links">
           <MexicanOrnament compact />
           <nav aria-label="Navegación del pie">
-            {links.map(([href, label]) => <a href={href} key={href}>{label}</a>)}
+            <NavLinks page={page} />
           </nav>
         </div>
       </div>
-      <p className="container footer-note">Propuesta visual conceptual · No es un sitio operativo · Sin pedidos ni pagos en línea</p>
+      <p className="container footer-note">Propuesta visual conceptual · Pedidos por WhatsApp · Sin pagos en línea</p>
     </footer>
+    <FloatingWhatsApp href={whatsappHref} />
+    </>
   );
 }

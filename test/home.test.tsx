@@ -4,15 +4,20 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { HomePage } from '../src/features/presentation/components/home-page';
 import { metadata } from '../src/app/page-metadata';
 
-const html = () => renderToStaticMarkup(<HomePage />);
+const html = (whatsappNumber?: string) => renderToStaticMarkup(<HomePage whatsappNumber={whatsappNumber} />);
 
 test('landing exposes the basic sections and working internal navigation', () => {
   const markup = html();
   assert.equal((markup.match(/<h1\b/g) ?? []).length, 1);
-  for (const id of ['inicio', 'carta', 'nosotros', 'contacto']) {
+  for (const id of ['inicio']) {
     assert.match(markup, new RegExp(`id="${id}"`));
     assert.match(markup, new RegExp(`href="#${id}"`));
   }
+  assert.match(markup, /id="carta"/);
+  assert.match(markup, /id="contacto"/);
+  assert.match(markup, /href="\/visitanos"/);
+  assert.match(markup, /<a href="#inicio" aria-current="page">Inicio<\/a>/);
+  assert.equal((markup.match(/href="\/menu"/g) ?? []).length, 3);
   assert.match(markup, /<header/);
   assert.match(markup, /<main id="contenido"/);
   assert.match(markup, /<footer/);
@@ -88,8 +93,30 @@ test('top-left corner carries the reference palm leaves and side textile border'
   assert.match(markup, /class="hero-side-textile"[^>]*aria-hidden="true"/);
 });
 
+test('landing describes authentic Mexican food instead of Tex-Mex', () => {
+  const markup = html();
+  assert.doesNotMatch(markup, /tex-?mex/i);
+  assert.match(markup, /auténtica comida mexicana/);
+  assert.match(markup, /Pedidos por WhatsApp · Sin pagos en línea/);
+});
+
+test('with a configured number the contact and floating WhatsApp controls open a prefilled chat', () => {
+  const markup = html('+57 300 123 4567');
+  const contactLink = 'https://wa.me/573001234567?text=Hola%20La%20Lupe%2C%20quiero%20m%C3%A1s%20informaci%C3%B3n.';
+  assert.equal(markup.split(`href="${contactLink}"`).length - 1, 2);
+  assert.match(markup, /<a[^>]*class="whatsapp-float-button"[^>]*target="_blank" rel="noopener noreferrer"[^>]*aria-label="Escríbenos por WhatsApp"/);
+  assert.match(markup, /<a[^>]*target="_blank" rel="noopener noreferrer"[^>]*>.*Escríbenos por WhatsApp<\/a>/);
+  assert.doesNotMatch(markup, /WhatsApp no disponible|Próximamente|disabled=""/);
+});
+
+test('home keeps a short essence preview linking to the dedicated story page', () => {
+  const markup = html();
+  assert.match(markup, /href="\/nuestra-esencia"[^>]*>Conoce nuestra historia/);
+  assert.doesNotMatch(markup, /class="essence-story-card"/);
+});
+
 test('demo metadata continues to prevent indexing', () => {
   assert.deepEqual(metadata.robots, { index: false, follow: false });
-  assert.equal(metadata.title, 'La Lupe | Cocina mexicana · Demostración');
+  assert.equal(metadata.title, 'Comida mexicana en Chía | La Lupe · Demo');
   assert.equal(metadata.openGraph && typeof metadata.openGraph === 'object' && metadata.openGraph.locale, 'es_CO');
 });

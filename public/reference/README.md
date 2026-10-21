@@ -22,3 +22,16 @@ Only photographic/conceptual and decorative portions are used. Headings, navigat
 These are low-resolution demo references, NOT verified restaurant photographs, original brand files, verified menu items, or proof of publication rights. Replace them with approved original assets before production. No address, telephone, prices or operating hours were inferred from the source image.
 
 Section heading font: Caveat Brush, downloaded from `google/fonts/ofl/caveatbrush`, served locally by Next.js. License is preserved at `src/app/fonts/OFL.txt` (SIL Open Font License 1.1). No runtime Google Fonts requests are required.
+
+## Menu page (`/menu`)
+
+Crops from the user-provided root file `menu.png` (1122 × 1402), the "Menú y pedido" design. The original image is unchanged.
+
+| Asset | Source crop: left, top, width, height |
+| --- | --- |
+| menu-hero.webp | 575, 100, 547, 262; the reference's "Asistente para elegir" widget is covered with a soft-edged patch of the same photo (source 150,176 → 337,176, 200 × 80) |
+| menu-entradas.webp | 38, 456, 230, 126 |
+| menu-fajitas.webp | 32, 881, 209, 177 |
+| menu-taquiza.webp | 34, 1120, 268, 135 |
+
+Prices on `/menu` are copied from `menu.png` and shown as reference prices pending approval. The cart, order panel, steppers, add buttons and assistant from the reference were removed: orders go through WhatsApp. The WhatsApp number lives only in `src/shared/config/contact.ts`; while it is empty every WhatsApp control renders disabled with no destination. The reference footer's address was not copied.

@@ -2,8 +2,10 @@ import Image from 'next/image';
 import { SiteFooter, SiteHeader } from './site-chrome';
 import { ActionIcon } from './action-icon';
 import { Flourish } from './flourish';
-import { FloatingWhatsApp } from './floating-whatsapp';
 import { MexicanOrnament } from './mexican-ornament';
+import { WhatsAppLink } from './whatsapp-link';
+import { contact, whatsappMessages, whatsappUrl } from '@/shared/config/contact';
+import { location } from '@/shared/config/location';
 
 const specialties = [
   { name: 'Fajitas', image: 'fajitas', color: 'red', detail: 'Una propuesta de fajitas con vegetales y acompañamientos para compartir. Ingredientes y presentación por confirmar.' },
@@ -11,7 +13,9 @@ const specialties = [
   { name: 'Entradas para compartir', image: 'entradas', color: 'yellow', detail: 'Una propuesta de entradas para el centro de la mesa. Productos e ingredientes sujetos a la carta aprobada.' },
 ] as const;
 
-export function HomePage() {
+export function HomePage({ whatsappNumber = contact.whatsappNumber }: { whatsappNumber?: string }) {
+  const whatsappHref = whatsappUrl(whatsappNumber, whatsappMessages.info);
+
   return (
     <>
       <SiteHeader />
@@ -24,9 +28,9 @@ export function HomePage() {
           <div className="container hero-inner">
             <div className="hero-copy">
               <h1 id="hero-title">Sabor Mexicano<br /><span>en Cada Encuentro</span></h1>
-              <p>Fajitas, taquizas y mucho más. Una propuesta Tex-Mex para disfrutar de una mesa cálida y llena de color.</p>
+              <p>Fajitas, taquizas y mucho más. Auténtica comida mexicana para disfrutar de una mesa cálida y llena de color.</p>
               <div className="hero-actions">
-                <a href="#carta" className="button"><ActionIcon kind="menu" />Ver menú</a>
+                <a href="/menu" className="button"><ActionIcon kind="menu" />Ver menú</a>
                 <a href="#contacto" className="button button-green"><ActionIcon kind="contact" />Contáctanos</a>
               </div>
             </div>
@@ -37,7 +41,7 @@ export function HomePage() {
           <div className="container">
             <div className="section-heading">
               <h2 id="carta-title" className="flourish"><Flourish /><span>Nuestras Especialidades</span><Flourish mirrored /></h2>
-              <p>Los sabores que nos inspiran, con un toque Tex-Mex.</p>
+              <p>Los sabores que nos inspiran: auténtica comida mexicana.</p>
             </div>
             <div className="specialty-grid">
               {specialties.map((item) => (
@@ -62,6 +66,7 @@ export function HomePage() {
             <h2 id="essence-title" className="flourish"><Flourish /><span>Nuestra Esencia</span><Flourish mirrored /></h2>
             <p>Una mesa cálida, mucho color y la inspiración de la cocina mexicana: así se presenta el concepto visual de La Lupe.</p>
             <p className="editorial-note">La historia y descripción del restaurante están pendientes de aprobación.</p>
+            <a className="essence-story-link" href="/nuestra-esencia">Conoce nuestra historia <span aria-hidden="true">→</span></a>
             <MexicanOrnament />
             <Image className="essence-deco essence-deco-gecko" src="/reference/essence-gecko.webp" width={109} height={118} alt="" unoptimized />
             <Image className="essence-deco essence-deco-agave" src="/reference/essence-agave.webp" width={115} height={85} alt="" unoptimized />
@@ -72,19 +77,19 @@ export function HomePage() {
           <div className="container contact-grid">
             <div className="visit-brush">
               <h2 id="contact-title"><ActionIcon kind="location" /><span>Visítanos</span></h2>
-              <p>Dirección y ubicación por confirmar</p>
+              <p>{location.address}</p>
+              <a className="visit-preview-link" href="/visitanos">Ver ubicación y cómo llegar <span aria-hidden="true">→</span></a>
             </div>
             <div className="contact-details">
               <p><ActionIcon kind="clock" /><span>Horarios por confirmar</span></p>
-              <button type="button" disabled aria-describedby="contact-status"><ActionIcon kind="whatsapp" />WhatsApp no disponible</button>
-              <p id="contact-status">Datos de contacto pendientes: falta confirmar el número y los perfiles oficiales.</p>
+              <WhatsAppLink href={whatsappHref} describedBy="contact-status"><ActionIcon kind="whatsapp" />{whatsappHref ? 'Escríbenos por WhatsApp' : 'WhatsApp no disponible'}</WhatsAppLink>
+              <p id="contact-status">{whatsappHref ? 'Pedidos y reservas por WhatsApp.' : 'Datos de contacto pendientes: falta confirmar el número y los perfiles oficiales.'}</p>
             </div>
             <Image className="village-art" src="/reference/village.webp" width={270} height={85} alt="" unoptimized />
           </div>
         </section>
       </main>
-      <SiteFooter />
-      <FloatingWhatsApp />
+      <SiteFooter whatsappHref={whatsappHref} />
     </>
   );
 }
