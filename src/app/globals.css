@@ -347,3 +347,33 @@ a.whatsapp-float-button { cursor: pointer; }
   /* Clearance belongs below all footer content, not between the quick links and phone numbers. */
   .footer-note { padding-right: 0; padding-bottom: 88px; text-align: center; }
 }
+
+/* Footer: one tidy row on desktop (logo · text · ornament + links · phones), a larger ornament everywhere
+   and cream phone links, which were dark green on the dark wood and barely readable. */
+.mexican-ornament.compact { width: 220px; margin: 0 auto .45rem; }
+.site-footer .footer-phones a { color: #fff0d1; }
+.site-footer .footer-phones a:hover, .site-footer .footer-phones a:focus-visible { color: #ffd88a; }
+.site-footer .footer-phones .action-icon { color: #e9c46a; }
+@media (min-width: 951px) {
+  .footer-inner { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; column-gap: 2rem; row-gap: .6rem; padding-right: 110px; }
+  .footer-inner > p { margin-right: 0; }
+  .footer-links { align-items: center; padding-right: 0; }
+  .mexican-ornament.compact { width: 260px; }
+  .site-footer nav { flex-wrap: nowrap; justify-content: center; gap: 1.6rem; }
+  .site-footer nav a { white-space: nowrap; font-size: .9rem; }
+  .footer-phones { text-align: left; }
+  .footer-phones ul { flex-wrap: nowrap; justify-content: flex-start; gap: .2rem 1.2rem; }
+  .footer-phones .contact-delivery { justify-content: flex-start; }
+  .footer-note { padding-right: 110px; }
+}
+/* Laptops: the phones move to a centered second row so links and text never wrap. */
+@media (min-width: 951px) and (max-width: 1279px) {
+  .footer-inner { grid-template-columns: auto auto minmax(0, 1fr); }
+  .footer-phones { grid-column: 1 / -1; text-align: center; }
+  .footer-phones ul, .footer-phones .contact-delivery { justify-content: center; }
+}
+/* Tablets: center the ornament and links like the phone numbers below them. */
+@media (min-width: 701px) and (max-width: 950px) {
+  .footer-links { width: 100%; align-items: center; padding-right: 0; }
+  .site-footer nav { justify-content: center; }
+}

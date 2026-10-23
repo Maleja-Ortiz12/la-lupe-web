@@ -243,6 +243,31 @@ try {
     writeFileSync(path.join(output, `${label}-metrics.json`), JSON.stringify(observations, null, 2));
     console.log(`PASS ${name} (${width}px): home, essence and visit page, map layout, address and route link checked`);
   }
+  // Footer: one compact row on desktop, no long gaps, larger ornament, WhatsApp float never covering text.
+  {
+    const evaluate = async expression => { const result = await cdp('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }); if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails)); return result.result.value; };
+  for (const width of [1920, 1440, 1122, 800, 375]) {
+    await cdp('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<=600});
+    const loaded=new Promise(resolve=>events.set('Page.loadEventFired',resolve));await cdp('Page.navigate',{url:new URL('/',target).href});await loaded;
+    await evaluate(`document.fonts.ready`);
+    await evaluate(`window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'})`);
+    await new Promise(resolve=>setTimeout(resolve,300));
+    const m = await evaluate(`(()=>{const r=e=>e.getBoundingClientRect();const f=document.querySelector('.site-footer');const rows=list=>new Set(list.map(e=>Math.round(r(e).top))).size;const links=[...f.querySelectorAll('nav a')];const phones=[...f.querySelectorAll('.footer-phones li')];const p=f.querySelector('.footer-inner > p');const lh=parseFloat(getComputedStyle(p).lineHeight);const orn=f.querySelector('.mexican-ornament');const wa=document.querySelector('.whatsapp-float-button');const overlap=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>1&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1;return {footer:Math.round(r(f).height),linkRows:rows(links),phoneRows:rows(phones),paragraphLines:Math.round(r(p).height/lh),ornament:Math.round(r(orn).width),linkGap:links.length>1?Math.round(r(links[1]).left-r(links[0]).right):0,waCoversContent:[...f.querySelectorAll('a,li,.footer-inner > p,.footer-note')].some(e=>{const range=document.createRange();range.selectNodeContents(e);return [...range.getClientRects()].some(box=>overlap(box,r(wa)))}),maxGap:(()=>{const blocks=[...f.querySelectorAll('.brand,.footer-inner > p,.footer-links,.footer-phones')].map(r).filter(b=>b.height>0).sort((a,b)=>a.top-b.top);let gap=0,bottom=blocks[0].bottom;for(const b of blocks.slice(1)){gap=Math.max(gap,b.top-bottom);bottom=Math.max(bottom,b.bottom)}return Math.round(gap)})(),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth}})()`);
+    const shot=await cdp('Page.captureScreenshot',{format:'png'});writeFileSync(path.join(output,`footer-desktop-${width}.png`),Buffer.from(shot.data,'base64'));
+        assert.equal(m.overflow, false, `${width}: no horizontal overflow`);
+    assert.equal(m.waCoversContent, false, `${width}: floating WhatsApp leaves footer content uncovered`);
+    assert.equal(m.linkRows, 1, `${width}: quick links on one line`);
+    assert.equal(m.phoneRows, width <= 600 ? m.phoneRows : 1, `${width}: phone numbers on one line`);
+    if (width > 950) {
+      assert.ok(m.paragraphLines <= 2, `${width}: footer text keeps its two lines (${m.paragraphLines})`);
+      // One row from 1280px; laptops use two rows (phones centered below) so nothing wraps.
+      assert.ok(m.footer <= (width >= 1280 ? 190 : 240), `${width}: compact footer height (${m.footer}px)`);
+    }
+    assert.ok(m.ornament >= (width <= 600 ? 200 : 220), `${width}: larger footer ornament (${m.ornament}px)`);
+    assert.ok(m.maxGap <= 32, `${width}: no long empty gap between footer blocks (${m.maxGap}px)`);
+    console.log(`PASS ${width}px footer: links one row, ornament ${m.ornament}px, height ${m.footer}px`);
+  }
+  }
   await send('Browser.close');
 } catch (error) {
   console.error(error);
