@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 
-const usage = 'Usage: npm run test:mobile -- "<Chromium browser executable>" [http://127.0.0.1:3000] [capture-label]\nChecks the phone hamburger header, cart above WhatsApp, brand name in the bar, the 7-second home specialties carousel and the /menu carousels with the options sheet. Requires an existing local Chromium browser and a running frontend. Writes screenshots to .preview/.';
+const usage = 'Usage: npm run test:mobile -- "<Chromium browser executable>" [http://127.0.0.1:3000] [capture-label]\nChecks the phone hamburger header, cart above WhatsApp, brand name in the bar, the 5-second infinite home specialties slider and the /menu carousels with the options sheet. Requires an existing local Chromium browser and a running frontend. Writes screenshots to .preview/.';
 if (process.argv.includes('--help')) {
   console.log(usage);
   process.exit(0);
@@ -149,57 +149,68 @@ try {
     }
   }
 
-  // Home specialties: 7-second autoplay carousel on phones (mobile-polish-real-app S3).
+  // Home specialties: one-row infinite slider, 3 cards from 761px (1 on phones), autoplay every 5s.
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const dishes = ['Taquiza', 'Carne a la tampiqueña', 'Nachos grandes', 'Combo "mero mero"', 'Flautas', 'Fajitas Quesadillas', 'Tacos (X5)'];
   const openHome = async (width, reduced = false) => {
     await cdp('Emulation.setDeviceMetricsOverride',{width,height:860,deviceScaleFactor:1,mobile:width<=600});
     await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:reduced?'reduce':'no-preference'}]});
     const loaded=new Promise(resolve=>events.set('Page.loadEventFired',resolve));await cdp('Page.navigate',{url:new URL('/',target).href});await loaded;
-    await evaluate(`new Promise((resolve,reject)=>{const end=performance.now()+10000;const check=()=>{const e=document.querySelector('.specialty-grid');if(e&&Object.keys(e).some(k=>k.startsWith('__react')))return resolve(true);if(performance.now()>end)return reject(Error('Hydration unavailable'));requestAnimationFrame(check)};check()})`);
+    // The loop clones appear only after hydration; wait for them before measuring.
+    await evaluate(`new Promise((resolve,reject)=>{const end=performance.now()+10000;const check=()=>{if(document.querySelectorAll('.specialty-grid > [data-clone]').length)return resolve(true);if(performance.now()>end)return reject(Error('Infinite slider clones never appeared'));requestAnimationFrame(check)};check()})`);
     await evaluate(`document.fonts.ready`);
     await evaluate(`Promise.all([...document.querySelectorAll('.specialty-grid img')].map(i=>{i.loading='eager';return Promise.race([i.decode().catch(()=>{}),new Promise(r=>setTimeout(r,3000))])}))`);
-    // Keep the pointer off the carousel so hover never pauses it.
+    // Keep the pointer off the slider so hover never pauses it.
     await cdp('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});
     await evaluate(`document.querySelector('.section-heading').scrollIntoView({block:'start',behavior:'instant'})`);
   };
-  const state = () => evaluate(`(()=>{const g=document.querySelector('.specialty-grid');const r=g.getBoundingClientRect();const cards=[...g.children].map(c=>c.getBoundingClientRect());const b=document.querySelector('.carousel-pause');const index=cards.reduce((best,c,i)=>Math.abs(c.left-r.left)<Math.abs(cards[best].left-r.left)?i:best,0);return {index,count:cards.length,scrollable:g.scrollWidth>g.clientWidth+10,rows:new Set(cards.map(c=>Math.round(c.top))).size,ratio:cards[0].width/r.width,button:b?b.getBoundingClientRect().height:0,buttonW:b?b.getBoundingClientRect().width:0,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth}})()`);
-  const waitIndex = (index, ms) => evaluate(`new Promise((resolve,reject)=>{const g=document.querySelector('.specialty-grid');const end=performance.now()+${ms};const check=()=>{const r=g.getBoundingClientRect();const cards=[...g.children].map(c=>c.getBoundingClientRect());const i=cards.reduce((best,c,k)=>Math.abs(c.left-r.left)<Math.abs(cards[best].left-r.left)?k:best,0);if(i===${index})return resolve(performance.now());if(performance.now()>end)return reject(new Error('index '+i+' instead of ${index}'));requestAnimationFrame(check)};check()})`);
-  for (const width of [375, 742]) {
+  // Fully visible card titles, left to right.
+  const state = () => evaluate(`(()=>{const g=document.querySelector('.specialty-grid');const r=g.getBoundingClientRect();const cards=[...g.children];const visible=cards.filter(c=>{const b=c.getBoundingClientRect();return b.left>=r.left-2&&b.right<=r.right+2}).sort((a,b)=>a.getBoundingClientRect().left-b.getBoundingClientRect().left).map(c=>c.querySelector('h3').textContent.trim());const real=cards.filter(c=>!c.hasAttribute('data-clone'));const clones=cards.filter(c=>c.hasAttribute('data-clone'));const b=document.querySelector('.carousel-pause');const first=cards.reduce((best,c)=>Math.abs(c.getBoundingClientRect().left-r.left)<Math.abs(best.getBoundingClientRect().left-r.left)?c:best,cards[0]);return {visible,real:real.length,clones:clones.length,clonesHidden:clones.every(c=>c.getAttribute('aria-hidden')==='true'&&c.inert),firstIsClone:first.hasAttribute('data-clone'),rows:new Set(cards.map(c=>Math.round(c.getBoundingClientRect().top))).size,ratio:real[0].getBoundingClientRect().width/r.width,button:b?b.getBoundingClientRect().height:0,buttonW:b?b.getBoundingClientRect().width:0,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth}})()`);
+  const waitFirst = (title, ms) => evaluate(`new Promise((resolve,reject)=>{const g=document.querySelector('.specialty-grid');const end=performance.now()+${ms};const check=()=>{const r=g.getBoundingClientRect();const v=[...g.children].filter(c=>{const b=c.getBoundingClientRect();return b.left>=r.left-2&&b.right<=r.right+2}).sort((a,b)=>a.getBoundingClientRect().left-b.getBoundingClientRect().left);if(v[0]&&v[0].querySelector('h3').textContent.trim()===${JSON.stringify(title)})return resolve(true);if(performance.now()>end)return reject(new Error('first visible '+(v[0]&&v[0].querySelector('h3').textContent.trim())+' instead of '+${JSON.stringify(title)}));requestAnimationFrame(check)};check()})`);
+  // Instantly park the slider on a real (non-clone) card.
+  const parkAt = index => evaluate(`(()=>{const g=document.querySelector('.specialty-grid');const cards=[...g.children];const card=cards.filter(c=>!c.hasAttribute('data-clone'))[${index}];g.style.scrollBehavior='auto';g.scrollLeft=card.offsetLeft-cards[0].offsetLeft;g.style.scrollBehavior='';})()`);
+  for (const [width, perView, step] of [[1440, 3, 2], [800, 3, 2], [375, 1, 1]]) {
     await openHome(width);
     let s = await state();
-    assert.equal(s.overflow, false);
-    assert.ok(s.scrollable && s.rows === 1, `${width}: one-row swipeable carousel`);
-    assert.ok(s.ratio > .75 && s.ratio < .95, `${width}: one large card with the next peeking (${s.ratio})`);
-    assert.ok(s.button >= 44 && s.buttonW >= 44, 'visible 44px pause control');
-    assert.equal(s.index, 0);
+    assert.equal(s.overflow, false, `${width}: no page overflow`);
+    assert.equal(s.rows, 1, `${width}: a single horizontal row`);
+    assert.equal(s.real, 7, `${width}: seven real specialties`);
+    assert.ok(s.clones >= 7 && s.clonesHidden, `${width}: loop clones are hidden from assistive tech and keyboard`);
+    assert.equal(s.firstIsClone, false, `${width}: starts on the real first card`);
+    assert.deepEqual(s.visible, dishes.slice(0, perView), `${width}: ${perView} card(s) per view starting with Taquiza`);
+    if (perView === 1) assert.ok(s.ratio > .75 && s.ratio < .95, `${width}: one large card with the next peeking (${s.ratio})`);
+    assert.ok(s.button >= 44 && s.buttonW >= 44, `${width}: visible 44px pause control`);
     const t0 = Date.now();
-    await sleep(5500);
-    assert.equal((await state()).index, 0, 'does not advance before 7 seconds');
-    await waitIndex(1, 4500);
+    await sleep(3800);
+    assert.deepEqual((await state()).visible, dishes.slice(0, perView), `${width}: no move before 5 seconds`);
+    await waitFirst(dishes[step], 4000);
     const elapsed = Date.now() - t0;
-    assert.ok(elapsed >= 6000 && elapsed <= 10000, `advances after ~7s (${elapsed}ms)`);
-    const shot=await cdp('Page.captureScreenshot',{format:'png'});writeFileSync(path.join(output,`home-carousel-${width}.png`),Buffer.from(shot.data,'base64'));
-    // Loops from the last card back to the first.
-    await evaluate(`(()=>{const g=document.querySelector('.specialty-grid');g.style.scrollBehavior='auto';g.scrollLeft=g.scrollWidth;g.style.scrollBehavior='';})()`);
-    await waitIndex(s.count - 1, 1500);
-    await waitIndex(0, 9000);
+    assert.ok(elapsed >= 4500 && elapsed <= 7500, `${width}: advances by ${step} after ~5s (${elapsed}ms)`);
+    const shot=await cdp('Page.captureScreenshot',{format:'png'});writeFileSync(path.join(output,`home-slider-${width}.png`),Buffer.from(shot.data,'base64'));
+    // Infinite: from the last real card it keeps moving forward into Taquiza, then stays on real cards.
+    await parkAt(6);
+    await sleep(400);
+    s = await state();
+    assert.deepEqual(s.visible, [...dishes, ...dishes].slice(6, 6 + perView), `${width}: the row wraps seamlessly after Tacos`);
+    await waitFirst(dishes[(6 + step) % 7], 6500);
+    await sleep(600);
+    assert.equal((await state()).firstIsClone, false, `${width}: after wrapping the slider re-anchors on real cards`);
     // Pause stops the autoplay.
     await evaluate(`document.querySelector('.carousel-pause').click()`);
     await wait(`document.querySelector('.carousel-pause').textContent.startsWith('Reanudar')`);
-    await sleep(8000);
-    assert.equal((await state()).index, 0, 'paused carousel stays put');
-    console.log(`PASS ${width}px: carousel, 44px pause, no move before 7s, advances at ~${elapsed}ms, loops, pause holds`);
+    const pausedAt = (await state()).visible;
+    await sleep(6500);
+    assert.deepEqual((await state()).visible, pausedAt, `${width}: paused slider stays put`);
+    console.log(`PASS ${width}px: one row, ${perView} per view, advances ${step} at ~${elapsed}ms, infinite wrap, pause holds`);
   }
-  await openHome(375, true);
-  const reduced = await state();
-  assert.equal(reduced.button, 0, 'no pause control when autoplay is disabled by reduced motion');
-  await sleep(8000);
-  assert.equal((await state()).index, 0, 'reduced motion: no autoplay');
-  console.log('PASS 375px reduced motion: swipe only, no autoplay');
-  await openHome(1440);
-  const desktop = await state();
-  assert.ok(desktop.rows > 1 && !desktop.scrollable && desktop.button === 0, 'desktop keeps the wrapping grid without carousel controls');
-  console.log('PASS 1440px: desktop grid unchanged');
+  for (const width of [375, 1440]) {
+    await openHome(width, true);
+    const reduced = await state();
+    assert.equal(reduced.button, 0, `${width}: no pause control when reduced motion disables autoplay`);
+    await sleep(6000);
+    assert.equal((await state()).visible[0], 'Taquiza', `${width}: reduced motion: no autoplay`);
+    console.log(`PASS ${width}px reduced motion: swipe only, no autoplay`);
+  }
 
   // /menu carousels, Ver más, direct + and options sheet (mobile-menu-carousel S3-S7).
   const tap = async selector => {

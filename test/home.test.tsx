@@ -157,11 +157,13 @@ test('every star dish has a menu anchor for the home links', async () => {
   }
 });
 
-test('specialties are wrapped in a phone carousel with a visible pause control for the 7-second autoplay', () => {
+test('specialties are a one-row slider with a visible pause control for the 5-second autoplay', () => {
   const markup = renderToStaticMarkup(<HomePage />);
   const carousel = markup.match(/<div class="specialty-carousel"[\s\S]*?<\/section>/)?.[0] ?? '';
   assert.match(carousel, /<div class="specialty-grid"[^>]*aria-label="Nuestras Especialidades: desliza para ver más"/);
   assert.equal((carousel.match(/<article class="specialty-card/g) ?? []).length, 7);
+  // Loop clones are client-only, so the server markup (and a no-JavaScript visit) lists each dish once.
+  assert.doesNotMatch(carousel, /data-clone|inert=""/);
   const pause = carousel.match(/<button\b[^>]*class="carousel-pause"[^>]*>[\s\S]*?<\/button>/)?.[0] ?? '';
   // The accessible name is the visible text plus a hidden suffix (WCAG 2.5.3), never a different aria-label.
   assert.doesNotMatch(pause, /aria-label=/);

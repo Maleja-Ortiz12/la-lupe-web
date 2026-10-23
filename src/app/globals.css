@@ -316,15 +316,19 @@ a.whatsapp-float-button { cursor: pointer; }
   .nav-toggle-icon { width: 26px; height: 26px; }
 }
 
-/* Phones: Nuestras Especialidades becomes a swipeable carousel (autoplay every 7s in specialty-carousel.tsx). */
-.carousel-pause { display: none; }
+/* Nuestras Especialidades: one-row infinite slider (behavior in specialty-carousel.tsx): 3 cards from 761px, 1 on phones.
+   The scrollbar stays hidden because the loop silently re-anchors the scroll position. */
+.specialty-carousel { display: flex; flex-direction: column; }
+.specialty-carousel .specialty-grid { position: relative; flex-wrap: nowrap; gap: 1.2rem; padding: .4rem 6px 1rem; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 6px; scrollbar-width: none; }
+.specialty-carousel .specialty-grid::-webkit-scrollbar { display: none; }
+.specialty-carousel .specialty-grid > .specialty-card { flex: 0 0 calc((100% - 2 * 1.2rem) / 3); scroll-snap-align: start; }
+.carousel-pause { display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; margin: .2rem auto 0; padding: .3rem 1rem; border: 1px solid #c79b55; border-radius: 999px; background: #fff6e2; color: #4b3021; font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; }
+.carousel-pause svg { width: 14px; height: 14px; }
 @media (max-width: 760px) {
-  .specialty-carousel .specialty-grid { flex-wrap: nowrap; gap: .9rem; margin-inline: calc(-1 * var(--space-page)); padding: .3rem var(--space-page) .9rem; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: var(--space-page); scrollbar-width: thin; scrollbar-color: #c79b55 transparent; }
-  .specialty-carousel .specialty-grid > .specialty-card { flex: 0 0 85%; scroll-snap-align: start; }
+  /* The gap must cover the side padding so no sliver of the previous card shows at the left edge. */
+  .specialty-carousel .specialty-grid { gap: max(.9rem, calc(var(--space-page) + 1px)); margin-inline: calc(-1 * var(--space-page)); padding: .3rem var(--space-page) .9rem; scroll-padding-inline: var(--space-page); }
+  .specialty-carousel .specialty-grid > .specialty-card { flex: 0 0 85%; }
   .specialty-card .card-photo:not(.dish-logo) { height: auto; aspect-ratio: auto; object-fit: contain; }
-  .carousel-pause { display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; margin: .2rem auto 0; padding: .3rem 1rem; border: 1px solid #c79b55; border-radius: 999px; background: #fff6e2; color: #4b3021; font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; }
-  .carousel-pause svg { width: 14px; height: 14px; }
-  .specialty-carousel { display: flex; flex-direction: column; }
 }
 
 /* Phone header: logo, "La Lupe" over "Cocina mexicana", and the ☰ on one centred row. */

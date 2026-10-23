@@ -1,6 +1,6 @@
 # La Lupe — base modular del plan Básico
 
-Proyecto exclusivamente frontend con Next.js y TypeScript, según [PROPUESTA_WEB_BASICA_Y_COBRO.md](PROPUESTA_WEB_BASICA_Y_COBRO.md). Es el sitio del restaurante: inicio, menú con precios y carrito que arma el pedido por WhatsApp, Nuestra esencia y Visítanos. No hay pagos en línea. En celular el encabezado usa menú hamburguesa, el menú y las especialidades se muestran en carruseles (las especialidades avanzan solas cada 7 s, con botón de pausa) y el carrito flota encima de WhatsApp.
+Proyecto exclusivamente frontend con Next.js y TypeScript, según [PROPUESTA_WEB_BASICA_Y_COBRO.md](PROPUESTA_WEB_BASICA_Y_COBRO.md). Es el sitio del restaurante: inicio, menú con precios y carrito que arma el pedido por WhatsApp, Nuestra esencia y Visítanos. No hay pagos en línea. En celular el encabezado usa menú hamburguesa, el menú se muestra en carruseles y el carrito flota encima de WhatsApp. En el inicio, Nuestras Especialidades es una sola fila infinita: 3 tarjetas en tablet/escritorio (avanza de a 2) y 1 en celular (avanza de a 1), automática cada 5 s con botón de pausa y sin movimiento si el sistema pide reducir animaciones.
 
 > Las secciones de historial más abajo (pruebas RED/GREEN, revisiones visuales) describen etapas anteriores, cuando el sitio era una demostración. El estado vigente es el de esta introducción y la sección **Estado actual**.
 
@@ -55,7 +55,7 @@ Ejecutar dentro de `la-lupe-web/`:
 | `npm test` | Pruebas de contenido, alcance, navegación y logo con Node.js |
 | `npm run test:layout -- "<ruta del navegador>" [URL] [etiqueta]` | Prueba renderizada de ancho completo en cuatro tamaños; requiere frontend iniciado |
 | `npm run test:cart -- "<ruta del navegador>" [URL] [etiqueta]` | Carrito, variantes y WhatsApp en escritorio/tablet (1440/1122), más selección exacta de toppings de Churros y sabores de Taquiza en celular/escritorio (375/1440) |
-| `npm run test:mobile -- "<ruta del navegador>" [URL] [etiqueta]` | Celular: menú hamburguesa, carrito encima de WhatsApp, nombre en la barra, carrusel de especialidades cada 7 s y carruseles del menú con selector de opciones |
+| `npm run test:mobile -- "<ruta del navegador>" [URL] [etiqueta]` | Celular: menú hamburguesa, carrito encima de WhatsApp, nombre en la barra, slider infinito de especialidades cada 5 s (3/1 por vista, paso 2/1) y carruseles del menú con selector de opciones |
 | `npm run typecheck` | Revisión estricta de TypeScript |
 | `npm run lint` | ESLint |
 | `npm run build` | Compilación de producción |
