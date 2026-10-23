@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="100" viewBox="0 0 520 100">
+<defs><linearGradient id="wood" x2="0" y2="1"><stop stop-color="#c18a4b"/><stop offset=".48" stop-color="#e5bc7f"/><stop offset="1" stop-color="#a56c35"/></linearGradient></defs>
+<path fill="url(#wood)" d="M0 0h520v100H0z"/>
+<g fill="none" stroke="#78441f" stroke-opacity=".22" stroke-width=".8">
+<path d="M-10 5C83 9 133 1 220 5S394 9 530 5M-10 13C65 7 137 19 228 13S405 8 530 13M-10 19C74 22 153 14 249 19S422 24 530 19"/>
+<path d="M-10 28C63 21 104 35 177 28S343 20 400 28s83 4 130 0M-10 33C63 28 111 40 177 33s169-7 223 0 83 3 130 0"/>
+<path d="M-10 43C66 46 145 37 240 43s182 7 290 0M-10 51C72 43 129 59 217 51s190-5 313 0M-10 59C71 65 141 52 231 59s170 4 299 0"/>
+<path d="M-10 69C95 63 165 76 270 69s170-5 260 0M-10 77C77 80 159 71 245 77s171 6 285 0M-10 88C91 81 163 94 272 88s150-3 258 0M-10 95C90 99 167 90 270 95s167 5 260 0"/>
+<path d="M83 28c23-9 48-9 69 0-23 8-47 8-69 0Zm15 0c13-4 26-4 39 0-13 4-26 4-39 0ZM333 70c24-8 45-8 65 0-20 8-41 8-65 0Z"/>
+</g>
+<g fill="none" stroke="#fff0c8" stroke-opacity=".25" stroke-width="1">
+<path d="M0 10c96 4 173-5 260 0s173 4 260 0M0 39c92-5 167 6 260 0s175-4 260 0M0 63c101 5 174-5 260 0s174 4 260 0M0 84c88-4 170 5 260 0s171-4 260 0"/>
+</g></svg>
