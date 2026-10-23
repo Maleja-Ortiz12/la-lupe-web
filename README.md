@@ -159,7 +159,7 @@ No se ejecutó auditoría de vulnerabilidades. npm informó que ESLint 9.39.5 es
 
 ## Pendientes
 
-**Estado actual:** el sitio ya es la app del restaurante, con carta real, precios en COP, fotos de platos, contacto (WhatsApp +57 311 634 1836) y domicilios a Cota y Chía. El logo original `Logo Final Lupe.png` se conserva completo en `public/brand/la-lupe.png`. Algunas imágenes decorativas (hero, Nuestra esencia) siguen siendo recortes de la referencia de diseño y conviene reemplazarlas por fotos propias antes de publicar. Los horarios siguen por confirmar. Las tipografías Chewy, Caveat Brush y Fira Sans se sirven localmente con sus licencias en `src/app/fonts/`.
+**Estado actual:** el sitio ya es la app del restaurante, con carta real, precios en COP, fotos de platos, contacto (WhatsApp +57 311 634 1836) y domicilios a Cota y Chía. El logo original `Logo Final Lupe.png` se conserva completo en `public/brand/la-lupe.png`. El ícono de la pestaña y de la pantalla de inicio sale de ese mismo logo: `node scripts/process-app-icons.mjs` regenera `src/app/favicon.ico` (16/32/48 px), `src/app/icon.png` (512 px) y `src/app/apple-icon.png` (180 px, fondo crema), y Next.js agrega los `<link>` en todas las páginas. Algunas imágenes decorativas (hero, Nuestra esencia) siguen siendo recortes de la referencia de diseño y conviene reemplazarlas por fotos propias antes de publicar. Los horarios siguen por confirmar. Las tipografías Chewy, Caveat Brush y Fira Sans se sirven localmente con sus licencias en `src/app/fonts/`.
 
 Las páginas mantienen `noindex, nofollow` y el origen local hasta tener el dominio real; los títulos, descripciones, Open Graph y datos estructurados ya no dicen "demo". El sitio no se ha publicado.
 
