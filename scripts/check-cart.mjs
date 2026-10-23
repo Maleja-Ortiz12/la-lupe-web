@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 
-const usage = 'Usage: npm run test:cart -- "<Chromium browser executable>" [http://127.0.0.1:3000] [capture-label]\nRequires an existing local Chromium browser and a running frontend. Writes screenshots and metrics to .preview/.';
+const usage = 'Usage: npm run test:cart -- "<Chromium browser executable>" [http://127.0.0.1:3000] [capture-label]\nChecks unified product-card popups, Entrada mixta X2/X4/X6 prices, portions/flavors, exact multi-picks, quantities, cart and WhatsApp on desktop and mobile. Requires an existing local Chromium browser and a running frontend. Writes screenshots and metrics to .preview/.';
 if (process.argv.includes('--help')) {
   console.log(usage);
   process.exit(0);
@@ -26,10 +26,10 @@ const child = spawn(browser, [
 ], { stdio: ['ignore', 'ignore', 'pipe'] });
 let socket;
 const deadline = setTimeout(() => {
-  console.error('Layout verification exceeded 45 seconds');
+  console.error('Cart verification exceeded 150 seconds');
   child.kill();
   process.exit(1);
-}, 45000);
+}, 150000);
 
 try {
   const endpoint = await new Promise((resolve, reject) => {
@@ -80,83 +80,105 @@ try {
     return result.result.value;
   };
   const wait = condition => evaluate(`new Promise((resolve,reject) => { const end=performance.now()+5000; const check=()=>{if(${condition}) return resolve(true); if(performance.now()>end) return reject(new Error('Unmet cart condition')); requestAnimationFrame(check);}; check(); })`);
-  const query = label => JSON.stringify(label === 'Agregar más productos' ? '.cart-continue' : label === 'Ver carrito' ? '.cart-jump' : `[aria-label=${JSON.stringify(label)}]`);
-  const click = async label => {
-    const point = await evaluate(`(()=>{const e=document.querySelector(${query(label)});if(!e)throw new Error('Missing control: '+${JSON.stringify(label)});e.scrollIntoView({block:'center',behavior:'instant'});const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,disabled:e.disabled};})()`);
-    assert.equal(point.disabled,false,label);
+  const subtotal = value => (process.env.CART_TRACE && console.log('  subtotal', value), wait(`document.querySelector('.cart-subtotal strong').textContent===${JSON.stringify(value)}`));
+  const observations=[];
+  const tap = async selector => {
+    const point = await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw Error('Missing '+${JSON.stringify(selector)});e.scrollIntoView({block:'center',inline:'center',behavior:'instant'});const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,w:r.width,disabled:e.disabled}})()`);
+    assert.ok(point.w>0&&!point.disabled,'Visible enabled control: '+selector);
     await cdp('Input.dispatchMouseEvent',{type:'mousePressed',x:point.x,y:point.y,button:'left',clickCount:1});
     await cdp('Input.dispatchMouseEvent',{type:'mouseReleased',x:point.x,y:point.y,button:'left',clickCount:1});
   };
-  const subtotal = value => wait(`document.querySelector('.cart-subtotal strong').textContent===${JSON.stringify(value)}`);
-  const capture = async (width,suffix) => {
-    await evaluate(`window.scrollTo({top:0,behavior:'instant'})`);
-    const {cssContentSize}=await cdp('Page.getLayoutMetrics');
-    const image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width,height:Math.ceil(cssContentSize.height),scale:1}});
-    writeFileSync(path.join(output,`${label}-${width}-${suffix}.png`),Buffer.from(image.data,'base64'));
+  const choose = async (name, checkbox=false) => {
+    const point=await evaluate(`(()=>{const label=[...document.querySelectorAll('#opciones-producto label')].find(l=>l.querySelector('input[type=${checkbox?'checkbox':'radio'}]')&&l.textContent.trim().startsWith(${JSON.stringify(name)}));if(!label)throw Error('Missing choice '+${JSON.stringify(name)});label.scrollIntoView({block:'center',behavior:'instant'});const r=label.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,disabled:label.querySelector('input').disabled}})()`);
+    assert.equal(point.disabled,false,name);
+    await cdp('Input.dispatchMouseEvent',{type:'mousePressed',x:point.x,y:point.y,button:'left',clickCount:1});
+    await cdp('Input.dispatchMouseEvent',{type:'mouseReleased',x:point.x,y:point.y,button:'left',clickCount:1});
   };
-  const observations=[];
-  for(const width of [1440,1122,375]) {
-    await cdp('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width===375});
-    const loaded=new Promise(resolve=>events.set('Page.loadEventFired',resolve));
-    await cdp('Page.navigate',{url:new URL('/menu',target).href});await loaded;
-    await evaluate(`(async()=>{await document.fonts.ready;await Promise.all([...document.images].map(i=>i.decode().catch(()=>{})));})()`);
+  const escape = async () => {
+    await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+    await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+  };
+  const ready = () => wait(`(()=>{const e=document.querySelector('.cart-jump');return e&&Object.keys(e).some(k=>k.startsWith('__reactProps'))})()`);
+  for(const width of [1440,1122,375,742]){
+    await cdp('Emulation.setDeviceMetricsOverride',{width,height:950,deviceScaleFactor:1,mobile:width===375});
+    const loaded=new Promise(resolve=>events.set('Page.loadEventFired',resolve));await cdp('Page.navigate',{url:new URL('/menu',target).href});await loaded;
+    await ready();await evaluate(`document.fonts.ready`);
+    const card = id => width>760?`#plato-${id}`:`.menu-section:not(#platos-estrella) .m-card[data-item="${id}"]`;
+    const entry = id => card(id)+(width>760?' .dish-options':' .m-add');
+    const open = async id => {await tap(entry(id));await wait(`document.querySelector('#opciones-producto').open&&Boolean(document.querySelector('#opciones-producto .sheet-actions'))`);};
+    const add = async () => {await tap('#opciones-producto .sheet-actions .cart-add');await wait(`!document.querySelector('#opciones-producto').open`);};
+    const geometry=()=>evaluate(`(()=>{const r=document.querySelector('.menu-products').getBoundingClientRect();return {x:r.x,w:r.width,scroll:scrollY}})()`);
     await subtotal('$0');
-    assert.equal(await evaluate(`document.querySelector('.cart-panel').hidden`), true);
-    await capture(width, 'catalog');
-    await click('Ver carrito');
-    await wait(`!document.querySelector('.cart-panel').hidden && document.activeElement.id === 'cart-title'`);
-    await click('Agregar más productos');
-    await wait(`document.querySelector('.cart-panel').hidden && document.activeElement.classList.contains('menu-products')`);
-    assert.equal(await evaluate(`document.querySelector('.cart-checkout').disabled`),true);
-    assert.equal(await evaluate(`document.querySelector(${query('Reducir cantidad de Entradas “X2”')}).disabled`),true);
-    await click('Aumentar cantidad de Entradas “X2”');
-    await wait(`document.querySelector(${query('Unidades de Entradas “X2”')}).textContent==='2'`);
-    await click('Agregar Entradas “X2”');await subtotal('$45.000');
-    await wait(`!document.querySelector('.cart-panel').hidden && document.activeElement.id === 'cart-title'`);
-    const cartInView = await evaluate(`document.querySelector('#cart-title').getBoundingClientRect().top`);
-    assert.ok(cartInView >= 0 && cartInView < 150, 'Adding must bring the cart heading into view');
-    await click('Agregar más productos');
-    await wait(`document.querySelector('.cart-panel').hidden && document.activeElement.getAttribute('aria-label') === 'Agregar Entradas “X2”'`);
-    await subtotal('$45.000');
-    await click('Agregar Entradas “X2”');await subtotal('$90.000');
-    assert.equal(await evaluate(`document.querySelectorAll('.cart-line').length`),1);
-    await click('Reducir cantidad de carrito: Entradas “X2”');await subtotal('$67.500');
-    await click('Quitar Entradas “X2”');await subtotal('$0');
-    await click('Reducir cantidad de Entradas “X2”');
-    await wait(`document.querySelector(${query('Unidades de Entradas “X2”')}).textContent==='1'`);
-    await click('Agregar Entradas “X2”');await subtotal('$22.500');
-    await click('Agregar Fajitas De Pollo (1/2 Orden)');await subtotal('$53.000');
-    const reference=await evaluate(`({subtotal:document.querySelector('.cart-subtotal strong').textContent,lines:[...document.querySelectorAll('.cart-line')].map(e=>({name:e.querySelector('h3').textContent,quantity:e.querySelector('output').textContent,total:e.querySelector('.cart-line-total').textContent}))})`);
-    await capture(width,'reference');
-    await click('Aumentar cantidad de carrito: Fajitas De Pollo (1/2 Orden)');await subtotal('$83.500');
-    await click('Reducir cantidad de carrito: Fajitas De Pollo (1/2 Orden)');await subtotal('$53.000');
-    await evaluate(`(()=>{const e=document.querySelector(${query('Porción de Fajitas De Pollo')});e.value='full';e.dispatchEvent(new Event('change',{bubbles:true}));})()`);
-    await wait(`Boolean(document.querySelector(${query('Agregar Fajitas De Pollo (Full Orden)')}))`);
-    await click('Agregar Fajitas De Pollo (Full Orden)');await subtotal('$111.000');
-    assert.equal(await evaluate(`document.querySelectorAll('.cart-line').length`),3);
-    await click('Agregar Taquiza 6 per. (40 T)');await subtotal('$231.000');
-    const state=await evaluate(`(()=>{const rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}};return {width:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,panel:rect(document.querySelector('.cart-panel')),products:rect(document.querySelector('.menu-products')),disabled:document.querySelector('.cart-checkout').disabled,href:document.querySelector('.cart-checkout').getAttribute('href'),lines:document.querySelectorAll('.cart-line').length,floats:document.querySelectorAll('.whatsapp-float').length,url:location.href,images:[...document.images].every(i=>i.complete&&i.naturalWidth>0)}})()`);
-    assert.equal(state.lines,4);assert.equal(state.floats,1);assert.equal(state.disabled,true);assert.equal(state.href,null);
-    assert.ok(state.url.endsWith('/menu'));
-    assert.ok(state.scrollWidth<=state.width&&state.panel.left>=0&&state.panel.right<=state.width,JSON.stringify(state));
-    assert.ok(state.images,'Cart images not loaded');
-    if(width===375) {
-      assert.ok(state.panel.top>=state.products.bottom,'Mobile cart must stack');
-      assert.equal(await evaluate(`[...document.querySelectorAll('.menu-table-scroll')].every(e => e.scrollWidth <= e.clientWidth + 1)`), true, 'Mobile options must fit without horizontal scrolling');
-      assert.equal(await evaluate(`[...document.querySelectorAll('.cart-stepper button,.cart-add,.cart-continue')].filter(e => e.getClientRects().length).every(e => e.getBoundingClientRect().height >= 44)`), true, 'Mobile controls must be at least 44px high');
+    assert.equal(await evaluate(`document.querySelector('.cart-panel').open`),false);
+    // The same five Entradas remain five products, not seven cards split by size.
+    assert.equal(await evaluate(`document.querySelectorAll('${width>760?'#entradas .dish-card':'#entradas .m-card'}').length`),5);
+    for(const [size,price] of [['X2','$40.900'],['X4','$81.900'],['X6','$112.900']]){
+      await open('entrada-mixta');
+      assert.equal(await evaluate(`document.activeElement.id`),'opciones-title');
+      const labels=await evaluate(`[...document.querySelectorAll('#opciones-producto .sheet-group label')].map(l=>l.textContent)`);
+      for(const text of ['X2$40.900','X4$81.900','X6$112.900'])assert.ok(labels.includes(text),'complete size/price list: '+text);
+      await choose(size);
+      await wait(`document.querySelector('#opciones-producto .sheet-actions .cart-add').textContent.includes('${price}')`);
+      await add();
+      assert.equal(await evaluate(`document.activeElement===document.querySelector(${JSON.stringify(entry('entrada-mixta'))})`),true,'return focus to Agregar');
     }
-    else assert.ok(state.panel.left>=state.products.right,'Desktop cart must sit beside products');
-    await capture(width,'variants');
-    for(const name of ['Entradas “X2”','Fajitas De Pollo (1/2 Orden)','Fajitas De Pollo (Full Orden)','Taquiza 6 per. (40 T)'])await click('Quitar '+name);
-    await subtotal('$0');assert.equal(await evaluate(`document.querySelectorAll('.cart-line').length`),0);
-    await click('Agregar Entradas “X2”');await subtotal('$22.500');
-    const reloaded=new Promise(resolve=>events.set('Page.loadEventFired',resolve));await cdp('Page.reload',{ignoreCache:true});await reloaded;await subtotal('$0');
-    assert.equal(await evaluate(`document.querySelector('.cart-panel').hidden`), true);
-    assert.equal(errors.length,0,JSON.stringify(errors));
-    observations.push({viewport:width,reference,state,emptyAfterReload:true});
-    writeFileSync(path.join(output,`${label}-results.json`),JSON.stringify(observations,null,2));
-    console.log(`PASS ${width}px: reveal on add, add-more preserves cart/focus, quantities, variants, $53.000 reference, removal, reset, responsive spacing`);
+    await subtotal('$235.700');
+    // Direct products still add without opening a modal, scrolling, or changing catalog width.
+    const nachos=card('nachos-grandes')+(width>760?' .cart-add':' .m-add');
+    await evaluate(`document.querySelector(${JSON.stringify(nachos)}).scrollIntoView({block:'center',inline:'center',behavior:'instant'})`);
+    const before=await geometry();await tap(nachos);await subtotal('$274.600');
+    assert.deepEqual(await geometry(),before,'simple Add leaves catalog geometry stable');
+    assert.equal(await evaluate(`document.querySelector('.cart-panel').open||document.querySelector('#opciones-producto').open`),false);
+    await wait(`document.querySelector('.cart-feedback').textContent==='Agregado al carrito con éxito'`);
+    // Fajitas: both portions/prices plus proteins in the dialog, not an inline price table.
+    await open('fajitas-famosas');
+    await escape();await wait(`!document.querySelector('#opciones-producto').open`);
+    assert.equal(await evaluate(`document.activeElement===document.querySelector(${JSON.stringify(entry('fajitas-famosas'))})`),true,'Escape restores focus');
+    await open('fajitas-famosas');await choose('Pollo');await choose('1/2 Orden');await add();await subtotal('$360.500');
+    await open('fajitas-famosas');await choose('Carne');await choose('Full Orden');
+    await tap('#opciones-producto .sheet-actions .cart-stepper button:last-child');
+    await wait(`document.querySelector('#opciones-producto .sheet-actions .cart-add').textContent.includes('$231.800')`);
+    const shot=await cdp('Page.captureScreenshot',{format:'png'});writeFileSync(path.join(output,`${label}-${width}-fajitas-popup.png`),Buffer.from(shot.data,'base64'));
+    await add();await subtotal('$592.300');
+    await open('enchiladas');await choose('Salsa Mole');await add();await subtotal('$635.200');
+    await open('tacos');await choose('Carnitas');await add();await subtotal('$676.100');
+    // Taquiza and Churros still reject incomplete choices and preserve their exact-count requirements.
+    await open('taquiza');assert.equal(await evaluate(`document.querySelector('#opciones-producto .sheet-actions .cart-add').disabled`),true);
+    await choose('4 personas');
+    for(const meat of ['Al Pastor','Pescado','Camarón'])await choose(meat,true);
+    assert.equal(await evaluate(`document.querySelectorAll('#opciones-producto input[type=checkbox]:disabled').length`),4);
+    await add();await subtotal('$832.000');
+    await open('churros');await choose('2 toppings');
+    assert.equal(await evaluate(`document.querySelector('#opciones-producto .sheet-actions .cart-add').disabled`),true);
+    await choose('Arequipe',true);assert.equal(await evaluate(`document.querySelector('#opciones-producto .sheet-actions .cart-add').disabled`),true);
+    await choose('Helado',true);await add();await subtotal('$856.900');
+    await open('te-o-soda-hatsu');await choose('Soda');await add();await subtotal('$870.800');
+    await tap(card('mojito')+(width>760?' .cart-add':' .m-add'));await subtotal('$870.800');
+    // Cart shows each complete selection and preserves manual WhatsApp ordering, including pending prices.
+    const beforeCart=await geometry();await tap('.cart-jump');await wait(`document.querySelector('.cart-panel').open`);
+    const afterCart=await geometry();assert.equal(afterCart.x,beforeCart.x);assert.equal(afterCart.w,beforeCart.w);
+    const expected=['Entrada mixta (X2)','Entrada mixta (X4)','Entrada mixta (X6)','Fajitas Famosas (1/2 Orden · Pollo)','Fajitas Famosas (Full Orden · Carne)','Enchiladas (Salsa Mole)','Tacos (X5 · Carnitas)','Taquiza (4 personas · Al Pastor + Pescado + Camarón)','Churros (2 toppings · Arequipe + Helado)','Té o Soda Hatsu (Soda)','Mojito'];
+    const lines=await evaluate(`document.querySelector('.cart-lines').textContent`);
+    for(const text of expected)assert.ok(lines.includes(text),text);
+    const href=await evaluate(`document.querySelector('.cart-checkout').getAttribute('href')`);
+    const message=new URL(href).searchParams.get('text');
+    for(const text of expected)assert.ok(message.includes(text),text+' in WhatsApp');
+    assert.ok(message.includes('$870.800'));
+    assert.ok(await evaluate(`document.querySelector('.cart-pending-note').textContent.includes('no incluye')`));
+    assert.equal(await evaluate(`document.querySelectorAll('.cart-line-no-photo img').length`),0);
+    await tap('.cart-panel [aria-label="Quitar Nachos grandes"]');await subtotal('$831.900');
+    await tap('.cart-panel [aria-label="Reducir cantidad de carrito: Fajitas Famosas (Full Orden · Carne)"]');await subtotal('$716.000');
+    await escape();await wait(`!document.querySelector('.cart-panel').open`);
+    assert.equal(await evaluate(`document.activeElement===document.querySelector('.cart-jump')`),true);
+    await tap('.cart-jump');await wait(`document.querySelector('.cart-panel').open`);await tap('.cart-continue');await wait(`!document.querySelector('.cart-panel').open`);
+    assert.equal(await evaluate(`document.documentElement.scrollWidth>document.documentElement.clientWidth`),false);
+    const reloaded=new Promise(resolve=>events.set('Page.loadEventFired',resolve));await cdp('Page.reload');await reloaded;await ready();await subtotal('$0');
+    assert.equal(await evaluate(`document.querySelector('.cart-count').textContent`),'0');
+    observations.push({width,passed:true,entrySizes:["X2","X4","X6"],confirmedSubtotal:870800});
+    console.log(`PASS ${width}px: one-card products, EntradaX2/X4/X6 prices, Fajitas proteins/portions, Tacos, Taquiza3/7, Churros,Hatsu,quantity,cart,WhatsApp,Escape/focus/reload`);
   }
+  assert.deepEqual(errors, [], "No browser runtime exceptions");
+  writeFileSync(path.join(output,`${label}-metrics.json`),JSON.stringify(observations,null,2));
   await send('Browser.close');
 } catch (error) {
   console.error(error);

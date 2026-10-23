@@ -17,7 +17,7 @@ test('visit page shows the supplied address and an accessible lazy map at the su
   assert.match(markup, /target="_blank" rel="noopener noreferrer"/);
   assert.match(markup, /El mapa es un servicio externo de Google Maps/);
   assert.match(markup, /Horarios por confirmar/);
-  assert.doesNotMatch(markup, /tel:|mailto:|wa\.me|Dirección y ubicación por confirmar/);
+  assert.doesNotMatch(markup, /mailto:|Dirección y ubicación por confirmar/);
   assert.match(markup, /<a href="\/visitanos" aria-current="page">Visítanos<\/a>/);
   assert.deepEqual(metadata.robots, { index: false, follow: false });
 });

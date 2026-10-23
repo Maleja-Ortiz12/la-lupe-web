@@ -1,6 +1,8 @@
 # La Lupe — base modular del plan Básico
 
-Proyecto exclusivamente frontend con Next.js y TypeScript, según [PROPUESTA_WEB_BASICA_Y_COBRO.md](PROPUESTA_WEB_BASICA_Y_COBRO.md). Contiene una primera landing visual con inicio, carta de referencia, nosotros y contacto. Es una demostración, no un sitio operativo ni una entrega con contenido definitivo.
+Proyecto exclusivamente frontend con Next.js y TypeScript, según [PROPUESTA_WEB_BASICA_Y_COBRO.md](PROPUESTA_WEB_BASICA_Y_COBRO.md). Es el sitio del restaurante: inicio, menú con precios y carrito que arma el pedido por WhatsApp, Nuestra esencia y Visítanos. No hay pagos en línea. En celular el encabezado usa menú hamburguesa, el menú y las especialidades se muestran en carruseles (las especialidades avanzan solas cada 7 s, con botón de pausa) y el carrito flota encima de WhatsApp.
+
+> Las secciones de historial más abajo (pruebas RED/GREEN, revisiones visuales) describen etapas anteriores, cuando el sitio era una demostración. El estado vigente es el de esta introducción y la sección **Estado actual**.
 
 ## Ejecutar localmente
 
@@ -52,6 +54,8 @@ Ejecutar dentro de `la-lupe-web/`:
 | `npm run dev` | Desarrollo con recarga |
 | `npm test` | Pruebas de contenido, alcance, navegación y logo con Node.js |
 | `npm run test:layout -- "<ruta del navegador>" [URL] [etiqueta]` | Prueba renderizada de ancho completo en cuatro tamaños; requiere frontend iniciado |
+| `npm run test:cart -- "<ruta del navegador>" [URL] [etiqueta]` | Carrito, variantes y WhatsApp en escritorio/tablet (1440/1122), más selección exacta de toppings de Churros y sabores de Taquiza en celular/escritorio (375/1440) |
+| `npm run test:mobile -- "<ruta del navegador>" [URL] [etiqueta]` | Celular: menú hamburguesa, carrito encima de WhatsApp, nombre en la barra, carrusel de especialidades cada 7 s y carruseles del menú con selector de opciones |
 | `npm run typecheck` | Revisión estricta de TypeScript |
 | `npm run lint` | ESLint |
 | `npm run build` | Compilación de producción |
@@ -85,15 +89,15 @@ El WhatsApp de demostración flota de forma continua y suave (ciclo de 3,6 s, de
 
 La esquina superior izquierda replica los detalles de la referencia: hojas de palma (SVG decorativo) sobre una cuña de madera, una franja textil vertical recortada de la referencia (`hero-side-textile.webp`) a lo largo del borde izquierdo del inicio y un leve envejecido en los bordes del papel. En móvil las hojas y la franja se reducen para no tapar el logo ni el texto. RED: prueba unitaria y de navegador sin esos elementos; GREEN: diez pruebas, typecheck, lint, build y navegador en cuatro tamaños (posición de las hojas y franja cubriendo todo el inicio).
 
-### SEO de la demo local
+### SEO
 
-**El SEO está preparado para revisión local, no para publicar ni posicionar la demo en Google.** Las cuatro páginas conservan `noindex, nofollow` y no se genera sitemap ni canonical de producción. El diseño, los estilos y el contenido visible no se modificaron.
+**La indexación sigue desactivada hasta tener el dominio real.** Las cuatro páginas conservan `noindex, nofollow` y no se genera sitemap ni canonical de producción. Al publicar, cambiar el origen en `src/shared/config/seo.ts` y habilitar `robots`.
 
 | Área | Implementación |
 | --- | --- |
 | Palabra clave principal | Comida mexicana en Chía, con La Lupe como marca; México como inspiración gastronómica, no ubicación del restaurante. |
-| Metadatos por página | Títulos y descripciones únicos para inicio, menú, esencia y ubicación; cada uno conserva su carácter de demo, referencia o relato ficticio. |
-| Redes sociales | Open Graph y Twitter Cards coherentes con cada página, idioma `es_CO` y una imagen PNG local de 1200 × 630 en `/opengraph-image`, identificada como demo. |
+| Metadatos por página | Títulos y descripciones únicos para inicio, menú, esencia y ubicación, sin textos de demo ni de propuesta. |
+| Redes sociales | Open Graph y Twitter Cards coherentes con cada página, idioma `es_CO` y una imagen PNG local de 1200 × 630 en `/opengraph-image`. |
 | Datos estructurados | JSON-LD `Restaurant` solo en el inicio, con nombre, cocina y dirección/coordenadas aportadas. Sin inventar teléfono, horarios, reseñas, precios ni una URL comercial. |
 | Origen local | `src/shared/config/seo.ts` usa `http://localhost:3005` para resolver los enlaces sociales. Para otra vista local, ajustar ese origen; esto no define un dominio de producción. |
 
@@ -108,6 +112,10 @@ Referencias consultadas: [skill Next.js SEO Audit](https://github.com/thisisAhsa
 ### Carrito local y solicitud por WhatsApp
 
 `/menu` incorpora el panel «Tu pedido» inspirado en `menu.png`. Al entrar, el carrito está oculto y el catálogo ocupa el espacio disponible. Pulsar «Agregar» muestra el carrito y lleva el foco a su título: a la derecha en escritorio y después del catálogo en móvil. «Agregar más productos» oculta el panel sin borrar la selección y devuelve el foco al último botón «Agregar» utilizado; si se abrió vacío, vuelve al catálogo. «Ver carrito» permite volver a abrirlo sin modificar productos. En móvil, las opciones de fajitas y taquiza se apilan con sus precios y porciones identificados, sin necesidad de desplazar tablas horizontalmente; los controles mantienen al menos 44 px de alto. Cada producto tiene cantidad y botón «Agregar». Las fajitas permiten elegir `1/2 Orden` o `Full Orden`, con líneas y precios independientes. Agregar otra vez el mismo producto combina sus cantidades; desde el carrito se pueden aumentar, reducir o quitar productos. Se permiten de 1 a 99 unidades por producto; nuevas adiciones se limitan a 99. El carrito comienza vacío y se borra al recargar o salir de la página: no usa almacenamiento persistente, backend ni datos personales.
+
+Churros permite elegir Chocolate, Arequipe y Helado: exactamente 1, 2 o 3 toppings según el tamaño. Taquiza exige 3 de los 7 sabores disponibles (incluidos Pescado y Camarón). Las elecciones viajan en el carrito y en el mensaje de WhatsApp; no se puede agregar una combinación incompleta. Los selectores funcionan en celular y escritorio.
+
+El flotante de WhatsApp ya no tiene botón de pausa; conserva su enlace y respeta la reducción de movimiento. El botón de pausa del carrusel de Especialidades es independiente y se mantiene.
 
 El único cierre es **«Pedir carrito por WhatsApp»**. Prepara un enlace con el detalle de productos, variantes, cantidades, importes de línea y subtotal de referencia en COP. El cliente revisa y decide enviar el mensaje; abrir WhatsApp no registra ni confirma un pedido. No se incorporan pagos, estados ficticios de pago, asistentes ni envío automático. El botón queda deshabilitado si el carrito está vacío o falta el número del restaurante. Para activar la apertura real, confirmar el número y configurarlo en `src/shared/config/contact.ts`; no se incorporó ningún número de ejemplo a la web.
 
@@ -151,8 +159,8 @@ No se ejecutó auditoría de vulnerabilidades. npm informó que ESLint 9.39.5 es
 
 ## Pendientes
 
-La primera versión visual está construida; falta reemplazar el contenido de referencia por información aprobada. El usuario aportó `Logo Final Lupe.png`: se conserva completo en `public/brand/la-lupe.png` y se muestra sin redibujarlo en la cabecera, Nuestra Esencia y el pie. Next.js genera versiones de menor tamaño para servirlo sin modificar el original. Aún se requieren fotografías, textos, carta, precios y datos de contacto; no se inventan datos operativos ni se reutilizan los datos privados de la cuenta de cobro. Por pedido del usuario, el diseño reproduce la composición de la imagen enviada: fondo pergamino, cabecera con emblema, hero con fotografía y título pintado, Nuestras Especialidades, Nuestra Esencia, Visítanos y pie de madera. Usa recortes de imágenes y elementos decorativos de esa referencia, no una captura como página completa; todos los textos y controles funcionales son HTML. Los recortes son de baja resolución y están rotulados como imágenes de referencia, no como fotos verificadas de platos reales. Antes de producción se necesitan originales aprobados y permisos de uso. La procedencia y coordenadas constan en `la-lupe-web/public/reference/README.md`. Chewy (título principal, Apache 2.0), Caveat Brush (secciones/botones, OFL) y Fira Sans (cuerpo, regular/medium, OFL) se sirven localmente con sus licencias conservadas en `src/app/fonts/`; Fira Sans Condensed ya no se carga. Son una aproximación tipográfica a la referencia; no se presume conocer los archivos originales del diseño. Los nombres de categorías y textos son propuestas; WhatsApp queda deshabilitado mientras no exista un número confirmado.
+**Estado actual:** el sitio ya es la app del restaurante, con carta real, precios en COP, fotos de platos, contacto (WhatsApp +57 311 634 1836) y domicilios a Cota y Chía. El logo original `Logo Final Lupe.png` se conserva completo en `public/brand/la-lupe.png`. Algunas imágenes decorativas (hero, Nuestra esencia) siguen siendo recortes de la referencia de diseño y conviene reemplazarlas por fotos propias antes de publicar. Los horarios siguen por confirmar. Las tipografías Chewy, Caveat Brush y Fira Sans se sirven localmente con sus licencias en `src/app/fonts/`.
 
-La landing solicita `noindex, nofollow` y tiene título, descripción y Open Graph de demostración, sin imagen comercial no autorizada. Los metadatos finales, dominio, canonical, sitemap y rastreo se configurarán según el contenido y despliegue aprobados. No se publicó el sitio ni se contrató alojamiento.
+Las páginas mantienen `noindex, nofollow` y el origen local hasta tener el dominio real; los títulos, descripciones, Open Graph y datos estructurados ya no dicen "demo". El sitio no se ha publicado.
 
 Los documentos `PLAN_INTEGRACION_FRONTEND_LA_LUPE.md`, `PLAN_INTEGRACION_BACKEND_LA_LUPE.md` y `PLAN_PROPUESTA_RESTAURANTES.md` se conservan como antecedentes de otra propuesta. Sus referencias a NestJS y al registro de pedidos **no forman parte del alcance vigente**. El carrito local con solicitud manual por WhatsApp sí se incorporó posteriormente por autorización expresa, sin adoptar el backend ni los pagos de esas propuestas. La referencia vigente es el plan Básico enlazado al inicio.

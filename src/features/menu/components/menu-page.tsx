@@ -11,7 +11,7 @@ export function MenuPage({ whatsappNumber = contact.whatsappNumber }: { whatsapp
         <section className="menu-hero" aria-labelledby="menu-title">
           <span className="hero-side-textile" aria-hidden="true" />
           <div className="menu-hero-photo">
-            <Image src="/reference/menu-hero.webp" width={547} height={262} alt="Imagen conceptual de fajitas, tortillas, guacamole y pico de gallo, extraída del diseño de referencia" priority unoptimized />
+            <Image src="/reference/menu-hero.webp" width={547} height={262} alt="Fajitas con tortillas, guacamole y pico de gallo" priority unoptimized />
           </div>
           <div className="container menu-hero-inner">
             <h1 id="menu-title">Menú <span>y pedido</span></h1>

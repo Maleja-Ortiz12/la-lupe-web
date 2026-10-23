@@ -109,6 +109,12 @@ try {
       const ready = new Promise(resolve => events.set('Page.loadEventFired', resolve));
       await cdp('Page.navigate', { url: new URL(route, target).href });
       await ready;
+      // Next dev may emit load before the client event handlers have hydrated.
+      const hydrated = await cdp('Runtime.evaluate', {
+        expression: `new Promise((resolve, reject) => { const end = performance.now() + 10000; const check = () => { const button = document.querySelector('.motion-toggle'); if (button && Object.keys(button).some(key => key.startsWith('__reactProps'))) return resolve(true); if (performance.now() > end) return reject(new Error('WhatsApp control did not hydrate')); requestAnimationFrame(check); }; check(); })`,
+        awaitPromise: true, returnByValue: true,
+      });
+      if (hydrated.exceptionDetails) throw new Error(JSON.stringify(hydrated.exceptionDetails));
       const pausedState = await clickToggle(true);
       const resumedState = await clickToggle(false);
       const result = await cdp('Runtime.evaluate', {
@@ -137,7 +143,7 @@ try {
       assert.equal(resumedState.pressed, 'false');
       assert.equal(detail.count, 1);
       assert.equal(runtimeErrors.length, 0, JSON.stringify(runtimeErrors));
-      assert.ok(detail.disabled && !detail.destination && !detail.footerCovered, JSON.stringify({ route, width, detail }));
+      assert.ok(!detail.disabled && detail.destination?.startsWith('https://wa.me/573116341836?text=') && !detail.footerCovered, JSON.stringify({ route, width, detail }));
       assert.ok(detail.initial.left >= 0 && detail.initial.right <= detail.width && detail.initial.top >= 0 && detail.initial.bottom <= 900);
       if (route === '/menu') assert.ok(detail.orderCount === 1 && detail.finalOrder);
       await cdp('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });

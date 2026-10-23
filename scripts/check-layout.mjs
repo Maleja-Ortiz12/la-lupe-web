@@ -95,6 +95,7 @@ try {
           imagesLoaded: [...document.images].every(image => image.complete && image.naturalWidth > 0),
           headingFont: getComputedStyle(document.querySelector('h1')).fontFamily,
           bodyFont: getComputedStyle(document.body).fontFamily,
+          headerSurface: (() => { const header = document.querySelector('.site-header'); const style = getComputedStyle(header); return { image: style.backgroundImage, color: style.backgroundColor, contentColor: getComputedStyle(document.querySelector('#contenido')).backgroundColor, shadow: style.boxShadow, border: parseFloat(style.borderBottomWidth), innerColor: getComputedStyle(header.querySelector('.header-inner')).backgroundColor, woodOpacity: getComputedStyle(header.querySelector('.corner-wood')).opacity, cornerImage: getComputedStyle(header.querySelector('.corner-wood')).backgroundImage, layers: style.backgroundSize.split(',').map(size => size.trim()), repeats: style.backgroundRepeat.split(',').map(repeat => repeat.trim()), cornerBottomGap: header.getBoundingClientRect().bottom - header.querySelector('.corner-wood').getBoundingClientRect().bottom }; })(),
           heroFontReady: Boolean(getComputedStyle(document.documentElement).getPropertyValue('--font-hero').trim()),
           readingFontReady: Boolean(getComputedStyle(document.documentElement).getPropertyValue('--font-reading').trim()),
           paragraphSize: parseFloat(getComputedStyle(document.querySelector('.card-copy > p')).fontSize),
@@ -102,11 +103,11 @@ try {
           motion: (() => { const button = document.querySelector('.whatsapp-float-button'); const style = getComputedStyle(button), halo = getComputedStyle(button, '::before'); return { name: style.animationName, duration: style.animationDuration, iterations: style.animationIterationCount, halo: halo.animationName, haloDuration: halo.animationDuration, haloIterations: halo.animationIterationCount }; })(),
           headingAngle: (() => { const transform = getComputedStyle(document.querySelector('h1')).transform; if (transform === 'none') return 0; const matrix = new DOMMatrix(transform); return Math.atan2(matrix.b, matrix.a) * 180 / Math.PI; })(),
           garnishCount: document.querySelectorAll('.flourish-garnish').length,
-          floating: (() => { const element = document.querySelector('.whatsapp-float'); if (!element) return null; const button = element.querySelector('.whatsapp-float-button'); return { ...rect(element), position: getComputedStyle(element).position, disabled: button.disabled, destination: element.querySelector('a')?.href || null }; })(),
+          floating: (() => { const element = document.querySelector('.whatsapp-float'); if (!element) return null; const button = element.querySelector('.whatsapp-float-button'); return { ...rect(element), position: getComputedStyle(element).position, disabled: Boolean(button.disabled), destination: element.querySelector('a')?.href || null, target: element.querySelector('a')?.target || null }; })(),
           viewportHeight: innerHeight,
           corner: (() => { const leaves = document.querySelector('.corner-leaves'), side = document.querySelector('.hero-side-textile'), hero = document.querySelector('#inicio'); if (!leaves || !side) return null; const l = rect(leaves), s = rect(side), h = rect(hero); return { leavesLeft: l.left, leavesTop: l.top + scrollY, leavesVisible: getComputedStyle(leaves).display !== 'none' && l.width > 20, sideLeft: s.left, sideWidth: s.width, sideCoversHero: s.top <= h.top + 2 && s.bottom >= h.bottom - 2, sideBg: getComputedStyle(side).backgroundImage }; })(),
-          essenceStory: (() => { const section = document.querySelector('#nosotros'); return { disclaimer: section.textContent.includes('Historia de ejemplo · No corresponde a la historia real del restaurante'), cards: [...section.querySelectorAll('.essence-story-card')].map(rect), captions: section.querySelectorAll('.essence-story-card figcaption').length }; })(),
-          logoCount: document.querySelectorAll('img[src*="la-lupe"],img[srcset*="la-lupe"]').length
+          essenceStory: (() => { const section = document.querySelector('#nosotros'); return { demoFree: !/Historia de ejemplo|historia imaginada|Imagen de referencia/.test(section.textContent), cards: [...section.querySelectorAll('.essence-story-card')].map(rect), captions: section.querySelectorAll('.essence-story-card figcaption').length }; })(),
+          logoCount: document.querySelectorAll('img[alt^="Logotipo original de La Lupe"]').length
         };
       })()`,
       awaitPromise: true, returnByValue: true,
@@ -124,6 +125,14 @@ try {
       assert.ok(Math.abs(frame.right - details.clientWidth) < 1, `${name}: ${frame.name} does not reach the right edge`);
     }
     assert.ok(details.scrollWidth <= details.clientWidth, `${name}: horizontal overflow`);
+    assert.ok(details.headerSurface.image.includes('header-wood.svg'), `${name}: reference header must have a visible vector wooden frame`);
+    assert.ok(details.headerSurface.cornerImage.includes('header-wood.svg'), `${name}: original brown corner must retain the wood surface`);
+    assert.ok(!/\.(?:png|jpe?g|webp)/i.test(details.headerSurface.image + details.headerSurface.cornerImage), `${name}: wooden frame must not introduce raster textures`);
+    assert.ok(Math.abs(details.headerSurface.cornerBottomGap) <= .5, `${name}: corner wood must cover the bottom edge`);
+    assert.equal(details.headerSurface.woodOpacity, '1', `${name}: corner wood must show its pronounced natural grain`);
+    assert.equal(details.headerSurface.color, details.headerSurface.contentColor, `${name}: preserve the existing warm base color`);
+    assert.ok(details.headerSurface.border >= 1 && details.headerSurface.shadow !== 'none', `${name}: header must separate visibly from the page`);
+    assert.notEqual(details.headerSurface.innerColor, 'rgba(0, 0, 0, 0)', `${name}: reference needs a distinct light navigation strip inside the wood frame`);
     assert.ok(details.imagesLoaded, `${name}: image failed to load`);
     assert.equal(details.logoCount, 3, `${name}: original logos missing`);
     assert.equal(details.essenceStory.cards.length, 0, `${name}: full story belongs on its own page`);
@@ -138,7 +147,7 @@ try {
     assert.ok(!details.bodyFont.includes('Trebuchet'), `${name}: reference body font missing`);
     assert.equal(details.garnishCount, 4, `${name}: reference flourishes missing`);
     assert.ok(details.floating && details.floating.position === 'fixed', `${name}: floating WhatsApp missing`);
-    assert.ok(details.floating.disabled && !details.floating.destination, `${name}: demo WhatsApp must not navigate`);
+    assert.ok(!details.floating.disabled && details.floating.destination?.startsWith('https://wa.me/573116341836?text=') && details.floating.target === '_blank', `${name}: floating WhatsApp must open the order number in a new tab (${details.floating.destination})`);
     assert.ok(details.floating.left >= 0 && details.floating.right <= details.clientWidth && details.floating.top >= 0 && details.floating.bottom <= details.viewportHeight, `${name}: WhatsApp outside viewport`);
     for (const button of details.buttons) assert.ok(button.height >= 44, `${name}: button too short`);
     assert.ok(details.corner, `${name}: top-left reference details missing`);
@@ -147,32 +156,24 @@ try {
     const controls = await cdp('Runtime.evaluate', {
       expression: `(async () => {
         const toggle = document.querySelector('.motion-toggle');
-        if (!toggle) return { missing: true };
         const button = document.querySelector('.whatsapp-float-button'), initialURL = location.href;
         const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-        toggle.click(); await frame();
-        const paused = { pressed: toggle.getAttribute('aria-pressed'), state: getComputedStyle(button).animationPlayState, label: toggle.getAttribute('aria-label') };
-        toggle.click(); await frame();
-        const resumed = { pressed: toggle.getAttribute('aria-pressed'), state: getComputedStyle(button).animationPlayState };
         window.scrollTo(0, document.documentElement.scrollHeight); await frame();
         const rect = element => element.getBoundingClientRect();
         const overlap = (a, b) => Math.min(a.right,b.right)-Math.max(a.left,b.left)>1 && Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1;
-        const occupied = [rect(button), rect(toggle)];
+        const occupied = [rect(button)];
         const footerCovered = [...document.querySelectorAll('.site-footer a')].some(link => occupied.some(r => overlap(r, rect(link))));
         window.scrollTo(0,0); await frame();
-        return { paused, resumed, footerCovered, noNavigation: location.href === initialURL, stillDisabled: button.disabled };
+        return { pauseAbsent: !toggle, footerCovered, noNavigation: location.href === initialURL, sameDestination: button.getAttribute('href') };
       })()`, awaitPromise: true, returnByValue: true,
     });
     observation.controls = controls.result.value;
-    assert.equal(observation.controls.paused?.pressed, 'true', `${name}: pause control missing or inactive`);
-    assert.equal(observation.controls.paused.state, 'paused');
-    assert.equal(observation.controls.paused.label, 'Reanudar animación de WhatsApp');
-    assert.deepEqual(observation.controls.resumed, { pressed: 'false', state: 'running' });
-    assert.ok(observation.controls.noNavigation && observation.controls.stillDisabled, `${name}: pause must not enable contact`);
+    assert.equal(observation.controls.pauseAbsent, true, `${name}: WhatsApp pause control must be absent`);
+    assert.ok(observation.controls.noNavigation && observation.controls.sameDestination?.startsWith('https://wa.me/573116341836'), `${name}: layout probe must not navigate or change the WhatsApp destination`);
     assert.equal(observation.controls.footerCovered, false, `${name}: floating controls cover footer links`);
     await cdp('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
-    const reduced = await cdp('Runtime.evaluate', { expression: `({ button: getComputedStyle(document.querySelector('.whatsapp-float-button')).animationName, halo: getComputedStyle(document.querySelector('.whatsapp-float-button'), '::before').animationName, control: getComputedStyle(document.querySelector('.motion-toggle')).display })`, returnByValue: true });
-    assert.deepEqual(reduced.result.value, { button: 'none', halo: 'none', control: 'none' }, `${name}: reduced motion must disable animation and hide its control`);
+    const reduced = await cdp('Runtime.evaluate', { expression: `({ button: getComputedStyle(document.querySelector('.whatsapp-float-button')).animationName, halo: getComputedStyle(document.querySelector('.whatsapp-float-button'), '::before').animationName, control: Boolean(document.querySelector('.motion-toggle')) })`, returnByValue: true });
+    assert.deepEqual(reduced.result.value, { button: 'none', halo: 'none', control: false }, `${name}: reduced motion must disable animation and hide its control`);
     observation.reducedMotion = reduced.result.value;
     writeFileSync(path.join(output, `${label}-metrics.json`), JSON.stringify(observations, null, 2));
     await cdp('Emulation.setEmulatedMedia', { features: [] });
@@ -189,7 +190,7 @@ try {
           images: [...document.images].every(image => image.complete && image.naturalWidth > 0),
           current: document.querySelector('.site-header [aria-current="page"]')?.getAttribute('href'),
           contact: document.querySelector('.site-header .button-small')?.getAttribute('href'),
-          disclaimer: document.querySelector('#nosotros').textContent.includes('Historia de ejemplo · No corresponde a la historia real del restaurante'),
+          demoFree: !/Historia de ejemplo|historia imaginada|Imagen de referencia/.test(document.querySelector('#nosotros').textContent),
           headingCount: document.querySelectorAll('h1').length
         };
       })()`, awaitPromise: true, returnByValue: true,
@@ -197,9 +198,9 @@ try {
     if (essence.exceptionDetails) throw new Error(JSON.stringify(essence.exceptionDetails));
     const story = essence.result.value;
     assert.equal(story.current, '/nuestra-esencia');
-    assert.equal(story.contact, '/#contacto');
+    assert.equal(story.contact, '/menu');
     assert.equal(story.headingCount, 1);
-    assert.ok(story.images && story.disclaimer && story.scrollWidth <= story.width, `${name}: essence images, disclaimer or width failed`);
+    assert.ok(story.images && story.demoFree && story.scrollWidth <= story.width, `${name}: essence images, demo-free copy or width failed`);
     assert.equal(story.cards.length, 3);
     for (const card of story.cards) assert.ok(card.left >= 0 && card.right <= story.width, `${name}: essence card outside viewport`);
     if (name === 'mobile') assert.ok(story.cards[1].top >= story.cards[0].bottom && story.cards[2].top >= story.cards[1].bottom, 'mobile: essence cards must stack');

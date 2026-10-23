@@ -1,5 +1,6 @@
 import { SiteHeader, SiteFooter } from '@/features/presentation/components/site-chrome';
 import { ActionIcon } from '@/features/presentation/components/action-icon';
+import { ContactPhones } from '@/features/presentation/components/contact-phones';
 import { Flourish } from '@/features/presentation/components/flourish';
 import { MexicanOrnament } from '@/features/presentation/components/mexican-ornament';
 import { location } from '@/shared/config/location';
@@ -21,6 +22,7 @@ export function VisitPage() {
               <h2><ActionIcon kind="location" />Aquí nos encuentras</h2>
               <address>{location.address}</address>
               <p className="visit-hours"><ActionIcon kind="clock" />Horarios por confirmar</p>
+              <ContactPhones />
               <p>Consulta la ruta desde tu punto de partida en Google Maps.</p>
               <a className="button button-green" href={location.directionsUrl} target="_blank" rel="noopener noreferrer"><ActionIcon kind="location" />Cómo llegar<span className="visually-hidden"> (abre Google Maps en otra pestaña)</span></a>
               <a className="visit-map-link" href={location.mapUrl} target="_blank" rel="noopener noreferrer">Ver La Lupe en Google Maps<span className="visually-hidden"> (otra pestaña)</span></a>

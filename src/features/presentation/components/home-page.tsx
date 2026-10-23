@@ -1,17 +1,17 @@
 import Image from 'next/image';
 import { SiteFooter, SiteHeader } from './site-chrome';
 import { ActionIcon } from './action-icon';
+import { ContactPhones } from './contact-phones';
 import { Flourish } from './flourish';
 import { MexicanOrnament } from './mexican-ornament';
 import { WhatsAppLink } from './whatsapp-link';
+import { SpecialtyCarousel } from './specialty-carousel';
 import { contact, whatsappMessages, whatsappUrl } from '@/shared/config/contact';
 import { location } from '@/shared/config/location';
+import { formatPrice, hasOptions, starItems, startingPrice } from '@/features/menu/menu-data';
 
-const specialties = [
-  { name: 'Fajitas', image: 'fajitas', color: 'red', detail: 'Una propuesta de fajitas con vegetales y acompañamientos para compartir. Ingredientes y presentación por confirmar.' },
-  { name: 'Taquiza', image: 'taquiza', color: 'green', detail: 'Tortillas, variedad de sabores y el color de la cocina mexicana. Opciones y acompañamientos por confirmar.' },
-  { name: 'Entradas para compartir', image: 'entradas', color: 'yellow', detail: 'Una propuesta de entradas para el centro de la mesa. Productos e ingredientes sujetos a la carta aprobada.' },
-] as const;
+// Owner's star dishes (odd/tasks/real-menu.md, S9), with the reference brush colors cycling per card.
+const brushColors = ['red', 'green', 'yellow'] as const;
 
 export function HomePage({ whatsappNumber = contact.whatsappNumber }: { whatsappNumber?: string }) {
   const whatsappHref = whatsappUrl(whatsappNumber, whatsappMessages.info);
@@ -23,7 +23,7 @@ export function HomePage({ whatsappNumber = contact.whatsappNumber }: { whatsapp
         <section id="inicio" className="hero" aria-labelledby="hero-title">
           <span className="hero-side-textile" aria-hidden="true" />
           <div className="hero-photo">
-            <Image src="/reference/hero.webp" width={587} height={283} alt="Imagen conceptual de fajitas y acompañamientos, extraída de la referencia; no es un plato verificado del restaurante" priority unoptimized />
+            <Image src="/reference/hero.webp" width={587} height={283} alt="Fajitas con pimentones, tortillas, guacamole y pico de gallo" priority unoptimized />
           </div>
           <div className="container hero-inner">
             <div className="hero-copy">
@@ -43,29 +43,36 @@ export function HomePage({ whatsappNumber = contact.whatsappNumber }: { whatsapp
               <h2 id="carta-title" className="flourish"><Flourish /><span>Nuestras Especialidades</span><Flourish mirrored /></h2>
               <p>Los sabores que nos inspiran: auténtica comida mexicana.</p>
             </div>
-            <div className="specialty-grid">
-              {specialties.map((item) => (
-                <article className="specialty-card" key={item.image}>
-                  <Image className="card-photo" src={`/reference/${item.image}.webp`} width={339} height={147} alt={`${item.name}: imagen conceptual de referencia, no corresponde a una oferta confirmada`} unoptimized />
-                  <div className="card-copy">
-                    <h3 className={`brush brush-${item.color}`}>{item.name}</h3>
-                    <p>{item.detail}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-            <p className="section-note">Carta pendiente de aprobación · Categorías e imágenes de referencia, sin precios ni disponibilidad confirmados.</p>
+            <SpecialtyCarousel>
+              {starItems.map((item, index) => {
+                const price = startingPrice(item);
+                return (
+                  <article className={`specialty-card${item.image ? '' : ' specialty-card-text'}`} key={item.id}>
+                    {item.image
+                      ? <Image className="card-photo" src={item.image} width={960} height={720} sizes="(max-width: 600px) 100vw, (max-width: 950px) 50vw, 25vw" alt={`${item.name}, foto real de La Lupe`} />
+                      : <Image className="card-photo dish-logo" src="/brand/la-lupe.png" width={240} height={180} alt="Logo de La Lupe · foto del plato próximamente" />}
+                    <span className="specialty-badge"><span aria-hidden="true">★ </span>Plato estrella</span>
+                    <div className="card-copy">
+                      <h3 className={`brush brush-${brushColors[index % brushColors.length]}`}>{item.name}{item.unit && <small>{` (${item.unit})`}</small>}</h3>
+                      {item.description && <p>{item.description}</p>}
+                      <p className="specialty-price">{price === null ? 'Precio por confirmar' : `${hasOptions(item) ? 'Desde ' : ''}${formatPrice(price)}`}</p>
+                      <a className="specialty-link" href={`/menu#plato-${item.id}`}>Ver en el menú <span aria-hidden="true">→</span></a>
+                    </div>
+                  </article>
+                );
+              })}
+            </SpecialtyCarousel>
+            <p className="section-note">Mira la carta completa con precios en el <a href="/menu">menú</a>.</p>
           </div>
         </section>
         <section id="nosotros" className="essence" aria-labelledby="essence-title">
           <div className="essence-image">
-            <Image className="essence-backdrop" src="/reference/esencia-brandless.webp" width={576} height={231} alt="Composición decorativa de madera y textiles mexicanos; no es una fotografía del local" unoptimized />
+            <Image className="essence-backdrop" src="/reference/esencia-brandless.webp" width={576} height={231} alt="Composición decorativa de madera y textiles mexicanos" unoptimized />
             <span className="essence-logo-frame"><Image className="essence-logo" src="/brand/la-lupe.png" width={232} height={232} sizes="240px" loading="eager" alt="Logotipo original de La Lupe · Cocina mexicana" /></span>
           </div>
           <div className="essence-copy">
             <h2 id="essence-title" className="flourish"><Flourish /><span>Nuestra Esencia</span><Flourish mirrored /></h2>
-            <p>Una mesa cálida, mucho color y la inspiración de la cocina mexicana: así se presenta el concepto visual de La Lupe.</p>
-            <p className="editorial-note">La historia y descripción del restaurante están pendientes de aprobación.</p>
+            <p>Una mesa cálida, mucho color y el sabor de la cocina mexicana, aquí en Chía.</p>
             <a className="essence-story-link" href="/nuestra-esencia">Conoce nuestra historia <span aria-hidden="true">→</span></a>
             <MexicanOrnament />
             <Image className="essence-deco essence-deco-gecko" src="/reference/essence-gecko.webp" width={109} height={118} alt="" unoptimized />
@@ -83,7 +90,8 @@ export function HomePage({ whatsappNumber = contact.whatsappNumber }: { whatsapp
             <div className="contact-details">
               <p><ActionIcon kind="clock" /><span>Horarios por confirmar</span></p>
               <WhatsAppLink href={whatsappHref} describedBy="contact-status"><ActionIcon kind="whatsapp" />{whatsappHref ? 'Escríbenos por WhatsApp' : 'WhatsApp no disponible'}</WhatsAppLink>
-              <p id="contact-status">{whatsappHref ? 'Pedidos y reservas por WhatsApp.' : 'Datos de contacto pendientes: falta confirmar el número y los perfiles oficiales.'}</p>
+              <p id="contact-status">{whatsappHref ? 'Pedidos y reservas por WhatsApp.' : 'WhatsApp no disponible por ahora; llámanos a cualquiera de nuestros teléfonos.'}</p>
+              <ContactPhones />
             </div>
             <Image className="village-art" src="/reference/village.webp" width={270} height={85} alt="" unoptimized />
           </div>

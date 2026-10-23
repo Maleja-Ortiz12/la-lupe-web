@@ -1,7 +1,7 @@
-import { demoMetadata } from '@/shared/config/seo';
+import { pageMetadata } from '@/shared/config/seo';
 
-export const metadata = demoMetadata(
+export const metadata = pageMetadata(
   '/',
-  'Comida mexicana en Chía | La Lupe · Demo',
-  'La Lupe: comida mexicana en Chía e inspiración de México. Explora el menú, nuestra esencia y cómo llegar. Demo local con contenido pendiente de aprobación.',
+  'Comida mexicana en Chía | La Lupe',
+  'La Lupe: comida mexicana en Chía e inspiración de México. Explora el menú con precios, pide por WhatsApp con domicilios a Cota y Chía y descubre cómo llegar.',
 );

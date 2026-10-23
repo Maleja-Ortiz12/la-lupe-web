@@ -1,27 +1,27 @@
 import type { Metadata } from 'next';
 
-// Intentionally local: this demo must not advertise a fictional production origin.
-// Change the origin and indexing policy only after production content is approved.
-const demoOrigin = new URL('http://localhost:3005');
+// Local origin and noindex until the owner provides the real domain (odd/tasks/mobile-polish-real-app.md, S4).
+// Then set the production origin here and allow indexing.
+const siteOrigin = new URL('http://localhost:3005');
 const socialImage = {
   url: '/opengraph-image',
   width: 1200,
   height: 630,
-  alt: 'La Lupe · Comida mexicana en Chía · Demo local',
+  alt: 'La Lupe · Comida mexicana en Chía',
 };
 
-export function demoMetadata(path: string, title: string, description: string): Metadata {
+export function pageMetadata(path: string, title: string, description: string): Metadata {
   return {
-    metadataBase: demoOrigin,
+    metadataBase: siteOrigin,
     title,
     description,
-    applicationName: 'La Lupe · Demo local',
+    applicationName: 'La Lupe',
     category: 'Restaurante de comida mexicana',
     robots: { index: false, follow: false },
     openGraph: {
       title,
       description,
-      siteName: 'La Lupe · Demo local',
+      siteName: 'La Lupe',
       locale: 'es_CO',
       type: 'website',
       url: path,

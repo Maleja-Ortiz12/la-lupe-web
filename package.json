@@ -14,7 +14,8 @@
     "test": "tsx --test test/*.test.tsx",
     "test:layout": "node scripts/check-layout.mjs",
     "test:whatsapp": "node scripts/check-whatsapp.mjs",
-    "test:cart": "node scripts/check-cart.mjs"
+    "test:cart": "node scripts/check-cart.mjs",
+    "test:mobile": "node scripts/check-mobile-menu.mjs"
   },
   "dependencies": {
     "next": "16.4.2",

@@ -7,5 +7,11 @@
   --color-green: #2c643b;
   --color-line: #c7a671;
   --font-display: var(--font-brush), 'Segoe Print', cursive;
+  /* Shared type scale so every page uses the same title, subtitle and note sizes. */
+  --text-page-title: clamp(3rem, 6vw, 6.4rem);
+  --text-page-title-compact: clamp(2.6rem, 13vw, 3.2rem);
+  --text-section-title: clamp(2.2rem, 3.9vw, 4.2rem);
+  --text-lead: clamp(1.05rem, 1.7vw, 1.5rem);
+  --text-note: .8rem;
   --space-page: clamp(1.1rem, 3.5vw, 3rem);
 }
