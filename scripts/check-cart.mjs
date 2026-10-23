@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 
-const usage = 'Usage: npm run test:cart -- "<Chromium browser executable>" [http://127.0.0.1:3000] [capture-label]\nChecks unified product-card popups, Entrada mixta X2/X4/X6 prices, portions/flavors, exact multi-picks, quantities, cart and WhatsApp on desktop and mobile. Requires an existing local Chromium browser and a running frontend. Writes screenshots and metrics to .preview/.';
+const usage = 'Usage: npm run test:cart -- "<Chromium browser executable>" [http://127.0.0.1:3000] [capture-label]\nChecks the desktop menu layout (categories sidebar, horizontal cards, section titles), unified product-card popups, Entrada mixta X2/X4/X6 prices, portions/flavors, exact multi-picks, quantities, cart and WhatsApp on desktop and mobile. Requires an existing local Chromium browser and a running frontend. Writes screenshots and metrics to .preview/.';
 if (process.argv.includes('--help')) {
   console.log(usage);
   process.exit(0);
@@ -179,6 +179,50 @@ try {
   }
   assert.deepEqual(errors, [], "No browser runtime exceptions");
   writeFileSync(path.join(output,`${label}-metrics.json`),JSON.stringify(observations,null,2));
+  {
+  // Desktop /menu layout from the template (odd/tasks/menu-web-template.md S2-S4); phones keep the carousels.
+  for (const [width, columns] of [[1440, 2], [1122, 2], [800, 1], [375, 0]]) {
+    await cdp('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<=600});
+    const loaded=new Promise(resolve=>events.set('Page.loadEventFired',resolve));await cdp('Page.navigate',{url:new URL('/menu',target).href});await loaded;
+    await wait(`(()=>{const e=document.querySelector('.cart-jump');return e&&Object.keys(e).some(k=>k.startsWith('__reactProps'))})()`);
+    await evaluate(`document.fonts.ready`);
+    await evaluate(`Promise.all([...document.querySelectorAll('.menu-products img')].filter(i=>i.getBoundingClientRect().width>0).map(i=>{i.loading='eager';return Promise.race([i.decode().catch(()=>{}),new Promise(r=>setTimeout(r,3000))])}))`);
+    const layout = await evaluate(`(()=>{const r=e=>e?e.getBoundingClientRect():null;const side=document.querySelector('.menu-sidebar');const pills=document.querySelector('.menu-category-nav');const products=document.querySelector('.menu-products');const grids=[...document.querySelectorAll('.menu-products .product-grid')].filter(g=>r(g).width>0);const rowsOk=grids.every(g=>{const cards=[...g.children];const tops=[...new Set(cards.map(c=>Math.round(r(c).top)))];return tops.every(t=>cards.filter(c=>Math.round(r(c).top)===t).length<=${columns})});const firstRow=grids.map(g=>[...g.children].filter(c=>Math.round(r(c).top)===Math.round(r(g.children[0]).top)).length);const photoLeft=[...document.querySelectorAll('.menu-products .product-grid > article')].filter(c=>r(c).width>0&&c.querySelector('img')).every(c=>{const p=r(c.querySelector('img')),copy=r(c.querySelector('.dish-copy'));return p.right<=copy.left+1&&p.top<copy.bottom&&p.bottom>copy.top});const badPhotos=[...document.querySelectorAll('.menu-products .product-grid img')].filter(i=>r(i).width>0&&getComputedStyle(i).objectFit!=='contain').length;const title=document.querySelector('#entradas .menu-title');const titleStyle=getComputedStyle(title);const line=getComputedStyle(title,'::after');return {side:side&&r(side).width>0?{left:r(side).left,right:r(side).right,width:r(side).width}:null,productsLeft:r(products).left,pills:r(pills).height>0,rowsOk,firstRow,photoLeft,badPhotos,gridWidths:[...new Set(grids.map(g=>Math.round(r(g).width)))],titleColor:titleStyle.color,lineWidth:parseFloat(line.width)||0,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth}})()`);
+    assert.equal(layout.overflow, false, `${width}: no horizontal overflow`);
+    if (columns === 0) {
+      assert.equal(layout.side, null, `${width}: no sidebar on phones`);
+      assert.equal(layout.pills, true, `${width}: phones keep the pill navigation`);
+      console.log(`PASS ${width}px: phone menu unchanged (pills, no sidebar)`);
+      continue;
+    }
+    assert.ok(layout.side && layout.side.width >= 180 && layout.side.right <= layout.productsLeft, `${width}: sidebar to the left of the dishes ${JSON.stringify(layout.side)}`);
+    assert.equal(layout.pills, false, `${width}: the sidebar replaces the top pills`);
+    assert.ok(layout.rowsOk && layout.firstRow.every(n => n === columns || n === 1), `${width}: ${columns} card(s) per row ${JSON.stringify(layout.firstRow)}`);
+    assert.ok(layout.photoLeft, `${width}: photos sit to the left of the card text`);
+    assert.equal(layout.gridWidths.length, 1, `${width}: every section uses the same full width ${JSON.stringify(layout.gridWidths)}`);
+    assert.equal(layout.badPhotos, 0, `${width}: complete photos (object-fit contain)`);
+    assert.equal(layout.titleColor, 'rgb(182, 36, 27)', `${width}: red section titles`);
+    assert.ok(layout.lineWidth > 40, `${width}: red rule after the section title (${layout.lineWidth}px)`);
+    // The sidebar follows the reader and highlights the section in view.
+    for (const [id, label] of [['carnes', 'Carnes'], ['postres', 'Postres']]) {
+      await evaluate(`document.querySelector('#${id}').scrollIntoView({block:'start',behavior:'instant'})`);
+      await wait(`document.querySelector('.menu-sidebar [aria-current="location"]')?.getAttribute('href')==='#${id}'`);
+      const sticky = await evaluate(`(()=>{const s=document.querySelector('.menu-sidebar').getBoundingClientRect();const a=document.querySelector('.menu-sidebar [aria-current="location"]');return {top:s.top,bottom:s.bottom,current:a.textContent.trim(),color:getComputedStyle(a).backgroundColor,count:document.querySelectorAll('.menu-sidebar [aria-current]').length}})()`);
+      assert.ok(sticky.top >= 0 && sticky.top < 120, `${width}: sidebar stays in view (${sticky.top})`);
+      assert.equal(sticky.current, label); assert.equal(sticky.count, 1);
+      assert.equal(sticky.color, 'rgb(182, 36, 27)', `${width}: active category highlighted in red`);
+    }
+    // Clicking a category jumps to its section.
+    await evaluate(`document.querySelector('.menu-sidebar a[href="#fajitas"]').click()`);
+    await wait(`Math.abs(document.querySelector('#fajitas').getBoundingClientRect().top)<40`);
+    for (const id of ['platos-estrella', 'entradas', 'fajitas', 'bebidas']) {
+      await evaluate(`document.querySelector('#${id}').scrollIntoView({block:'start',behavior:'instant'})`);
+      await new Promise(resolve => setTimeout(resolve, 250));
+      const shot=await cdp('Page.captureScreenshot',{format:'png'});writeFileSync(path.join(output,`menu-web-${width}-${id}.png`),Buffer.from(shot.data,'base64'));
+    }
+    console.log(`PASS ${width}px: sidebar + scroll-spy, ${columns} column(s), photo-left complete photos, red titles with rule`);
+  }
+  }
   await send('Browser.close');
 } catch (error) {
   console.error(error);

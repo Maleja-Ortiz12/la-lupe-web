@@ -6,9 +6,12 @@ import { ActionIcon } from '@/features/presentation/components/action-icon';
 import { Flourish } from '@/features/presentation/components/flourish';
 import { WhatsAppLink } from '@/features/presentation/components/whatsapp-link';
 import { menuCategories, starItems, formatPrice, hasOptions, startingPrice, itemOptions, requiredPicks, type MenuChoiceOption, type MenuItem } from '../menu-data';
+import { MenuSidebar } from './menu-sidebar';
 import { addToCart, changeQuantity, removeFromCart, cartHasPendingPrices, cartSubtotal, cartWhatsAppUrl, lineTotalLabel, menuProducts, productId, type CartLine } from '../cart';
 
 type AddHandler = (productId: string, quantity: number) => void;
+
+const sidebarSections = [{ id: 'platos-estrella', label: 'Estrella' }, ...menuCategories.map(category => ({ id: category.id, label: category.title }))];
 
 function CartIcon() {
   return <svg className="action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 3h3l3 12h11l3-9H6M9 19h.01M18 19h.01" strokeLinecap="round" strokeLinejoin="round" /></svg>;
@@ -278,6 +281,7 @@ export function MenuCatalog({ whatsappNumber }: { whatsappNumber: string }) {
       <p className="visually-hidden" role="status">{announcement}</p>
       <p className={`cart-feedback${feedback ? ' is-visible' : ''}`} role="status" aria-atomic="true">{feedback ? 'Agregado al carrito con éxito' : ''}</p>
       <div className="menu-with-cart" data-cart-open={cartOpen}>
+        <MenuSidebar sections={sidebarSections} />
         <div className="menu-products" ref={catalog} tabIndex={-1}>
           <section id="platos-estrella" className="menu-section star-showcase" aria-labelledby="platos-estrella-title">
             <SectionTitle id="platos-estrella-title">Platos estrella</SectionTitle>
