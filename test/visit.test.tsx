@@ -19,7 +19,7 @@ test('visit page shows the supplied address and an accessible lazy map at the su
   assert.match(markup, /Horarios por confirmar/);
   assert.doesNotMatch(markup, /mailto:|Dirección y ubicación por confirmar/);
   assert.match(markup, /<a href="\/visitanos" aria-current="page">Visítanos<\/a>/);
-  assert.deepEqual(metadata.robots, { index: false, follow: false });
+  assert.deepEqual(metadata.robots, { index: true, follow: true });
 });
 
 test('home links to the visit page without embedding a map or losing the supplied address', () => {

@@ -111,7 +111,7 @@ test('menu header marks Menú as current and links back to the landing sections'
 });
 
 test('menu metadata prevents indexing', () => {
-  assert.deepEqual(metadata.robots, { index: false, follow: false });
+  assert.deepEqual(metadata.robots, { index: true, follow: true });
   assert.equal(metadata.title, 'Menú de comida mexicana | La Lupe');
   assert.doesNotMatch(String(metadata.description), /tex-?mex|sin pedidos/i);
 });

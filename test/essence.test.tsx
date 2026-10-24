@@ -19,10 +19,10 @@ test('essence describes the restaurant in three truthful parts with local images
   assert.doesNotMatch(section, /La historia y descripción del restaurante están pendientes/);
 });
 
-test('essence route has its own heading, current navigation and noindex metadata', () => {
+test('essence route has its own heading, current navigation and indexable metadata', () => {
   const markup = renderToStaticMarkup(<Page />);
   assert.equal((markup.match(/<h1\b/g) ?? []).length, 1);
   assert.match(markup, /<a href="\/nuestra-esencia" aria-current="page">Nuestra esencia<\/a>/);
   for (const href of ['/#inicio', '/menu', '/visitanos']) assert.ok(markup.includes(`href="${href}"`));
-  assert.deepEqual(metadata.robots, { index: false, follow: false });
+  assert.deepEqual(metadata.robots, { index: true, follow: true });
 });

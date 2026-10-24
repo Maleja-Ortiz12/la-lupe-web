@@ -115,8 +115,8 @@ test('home keeps a short essence preview linking to the dedicated story page', (
   assert.doesNotMatch(markup, /class="essence-story-card"/);
 });
 
-test('home metadata keeps noindex until the real domain exists', () => {
-  assert.deepEqual(metadata.robots, { index: false, follow: false });
+test('home metadata is indexable on the real domain', () => {
+  assert.deepEqual(metadata.robots, { index: true, follow: true });
   assert.equal(metadata.title, 'Comida mexicana en Chía | La Lupe');
   assert.equal(metadata.openGraph && typeof metadata.openGraph === 'object' && metadata.openGraph.locale, 'es_CO');
 });

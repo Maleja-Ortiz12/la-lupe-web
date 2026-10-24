@@ -9,13 +9,13 @@ import Home from '../src/app/page';
 
 const pages = [['/', home], ['/menu', menu], ['/nuestra-esencia', essence], ['/visitanos', visit]] as const;
 
-test('all four routes have unique, consistent local SEO and social metadata while retaining noindex', () => {
+test('all four routes have unique, consistent SEO and social metadata on the production domain, indexable', () => {
   const titles = new Set();
   const descriptions = new Set();
   for (const [path, metadata] of pages) {
-    assert.deepEqual(metadata.robots, { index: false, follow: false });
+    assert.deepEqual(metadata.robots, { index: true, follow: true });
     assert.ok(metadata.metadataBase instanceof URL);
-    assert.equal(metadata.metadataBase.origin, 'http://localhost:3005');
+    assert.equal(metadata.metadataBase.origin, 'https://lalupe.co');
     assert.equal(typeof metadata.title, 'string');
     assert.match(String(metadata.title), /La Lupe/);
     assert.match(String(metadata.title), /comida mexicana/i);

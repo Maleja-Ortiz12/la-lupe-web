@@ -20,12 +20,12 @@ test('no route shows demo, proposal, reference or pending-approval copy', () => 
   }
 });
 
-test('metadata, social image and structured data drop "Demo" but keep noindex until the real domain exists', () => {
+test('metadata, social image and structured data drop "Demo" and are indexable on the real domain', () => {
   for (const [path, , metadata] of routes) {
     for (const text of [metadata.title, metadata.description, metadata.applicationName, metadata.openGraph && 'siteName' in metadata.openGraph ? metadata.openGraph.siteName : '']) {
       assert.doesNotMatch(String(text), demoCopy, `${path}: ${text}`);
     }
-    assert.deepEqual(metadata.robots, { index: false, follow: false }, path);
+    assert.deepEqual(metadata.robots, { index: true, follow: true }, path);
   }
   assert.doesNotMatch(socialAlt, demoCopy);
   const data = JSON.parse(renderToStaticMarkup(<Home />).match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)?.[1] ?? '{}');

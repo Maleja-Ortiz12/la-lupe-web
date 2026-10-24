@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 
-// Local origin and noindex until the owner provides the real domain (odd/tasks/mobile-polish-real-app.md, S4).
-// Then set the production origin here and allow indexing.
-const siteOrigin = new URL('http://localhost:3005');
+// Production origin: social previews (WhatsApp, Facebook) resolve image URLs against it.
+export const siteOrigin = new URL('https://lalupe.co');
 const socialImage = {
   url: '/opengraph-image',
   width: 1200,
@@ -17,7 +16,7 @@ export function pageMetadata(path: string, title: string, description: string): 
     description,
     applicationName: 'La Lupe',
     category: 'Restaurante de comida mexicana',
-    robots: { index: false, follow: false },
+    robots: { index: true, follow: true },
     openGraph: {
       title,
       description,

@@ -30,6 +30,6 @@ npm run preview
 - Las rutas actuales se prerenderizan y usan caché de solo lectura en Static Assets: no se crea un bucket R2 ni una base de datos. Si se incorpora ISR o revalidación, cambiar esta estrategia por una caché con escritura.
 - `IMAGES` permite optimizar los `next/image` existentes mediante Cloudflare Images y puede generar cargos según el plan y el uso.
 - `.open-next/`, `.wrangler/` y `.dev.vars*` quedan fuera de Git. Para bindings locales, se puede crear `.dev.vars` con `NEXTJS_ENV=development`; no se necesitan secretos para la web actual.
-- Esto no cambia el dominio SEO ni retira `noindex`: revisar esas decisiones por separado antes del lanzamiento público.
+- El dominio SEO es `https://lalupe.co` y las páginas son indexables (`src/shared/config/seo.ts`).
 
 Referencias: [OpenNext para aplicaciones existentes](https://opennext.js.org/cloudflare/get-started), [caché de OpenNext](https://opennext.js.org/cloudflare/caching), [Next.js en Workers](https://developers.cloudflare.com/workers/frameworks/framework-guides/nextjs/).
