@@ -137,7 +137,7 @@ try {
     assert.equal(details.logoCount, 3, `${name}: original logos missing`);
     assert.equal(details.essenceStory.cards.length, 0, `${name}: full story belongs on its own page`);
     assert.ok(!details.headingFont.includes('Trebuchet'), `${name}: brush font missing`);
-    assert.equal(details.sections.map(section => section.id).join(','), 'inicio,carta,nosotros,contacto');
+    assert.equal(details.sections.map(section => section.id).join(','), 'inicio,carta,catering,nosotros,contacto');
     assert.ok(details.heroFontReady && details.readingFontReady && details.motion.name === 'whatsapp-float' && details.motion.halo === 'whatsapp-halo', `${name}: requested typography/animation missing ${JSON.stringify({ hero: details.heroFontReady, reading: details.readingFontReady, motion: details.motion })}`);
     assert.equal(details.motion.duration, '3.6s');
     assert.equal(details.motion.iterations, 'infinite');
@@ -145,7 +145,8 @@ try {
     assert.ok(details.paragraphSize >= 16 && details.paragraphLineHeight / details.paragraphSize >= 1.35, `${name}: paragraphs too small or tight`);
     assert.ok(details.headingAngle < -1 && details.headingAngle > -4, `${name}: reference title tilt missing (${details.headingAngle})`);
     assert.ok(!details.bodyFont.includes('Trebuchet'), `${name}: reference body font missing`);
-    assert.equal(details.garnishCount, 4, `${name}: reference flourishes missing`);
+    // Specialties, essence and the catering heading carry two decorative leaves each.
+    assert.equal(details.garnishCount, 6, `${name}: reference flourishes missing`);
     assert.ok(details.floating && details.floating.position === 'fixed', `${name}: floating WhatsApp missing`);
     assert.ok(!details.floating.disabled && details.floating.destination?.startsWith('https://wa.me/573116341836?text=') && details.floating.target === '_blank', `${name}: floating WhatsApp must open the order number in a new tab (${details.floating.destination})`);
     assert.ok(details.floating.left >= 0 && details.floating.right <= details.clientWidth && details.floating.top >= 0 && details.floating.bottom <= details.viewportHeight, `${name}: WhatsApp outside viewport`);

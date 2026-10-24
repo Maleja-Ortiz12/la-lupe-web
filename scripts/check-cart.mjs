@@ -83,7 +83,10 @@ try {
   const subtotal = value => (process.env.CART_TRACE && console.log('  subtotal', value), wait(`document.querySelector('.cart-subtotal strong').textContent===${JSON.stringify(value)}`));
   const observations=[];
   const tap = async selector => {
-    const point = await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw Error('Missing '+${JSON.stringify(selector)});e.scrollIntoView({block:'center',inline:'center',behavior:'instant'});const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,w:r.width,disabled:e.disabled}})()`);
+    // Scroll once without forcing a horizontal centre: carousels re-snap to their own anchor, and late photos or the
+    // font-dependent "Ver más" toggle can shift cards up to ~1 s after load. Click only after the control has stayed
+    // put for 600 ms, so press and release hit the same target.
+    const point = await evaluate(`new Promise((resolve,reject)=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)return reject(Error('Missing '+${JSON.stringify(selector)}));e.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});const end=performance.now()+6000;let last='',since=performance.now();const check=()=>{const r=e.getBoundingClientRect();const key=Math.round(r.x)+','+Math.round(r.y);if(key!==last){last=key;since=performance.now();}if(performance.now()-since>=600||performance.now()>end)return resolve({x:r.x+r.width/2,y:r.y+r.height/2,w:r.width,disabled:e.disabled});requestAnimationFrame(check)};check()})`);
     assert.ok(point.w>0&&!point.disabled,'Visible enabled control: '+selector);
     await cdp('Input.dispatchMouseEvent',{type:'mousePressed',x:point.x,y:point.y,button:'left',clickCount:1});
     await cdp('Input.dispatchMouseEvent',{type:'mouseReleased',x:point.x,y:point.y,button:'left',clickCount:1});
@@ -212,6 +215,9 @@ try {
       assert.equal(sticky.current, label); assert.equal(sticky.count, 1);
       assert.equal(sticky.color, 'rgb(182, 36, 27)', `${width}: active category highlighted in red`);
     }
+    // At the very bottom the last section (catering) is the current one.
+    await evaluate(`window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'})`);
+    await wait(`document.querySelector('.menu-sidebar [aria-current="location"]')?.getAttribute('href')==='#catering'`);
     // Clicking a category jumps to its section.
     await evaluate(`document.querySelector('.menu-sidebar a[href="#fajitas"]').click()`);
     await wait(`Math.abs(document.querySelector('#fajitas').getBoundingClientRect().top)<40`);
@@ -222,6 +228,37 @@ try {
     }
     console.log(`PASS ${width}px: sidebar + scroll-spy, ${columns} column(s), photo-left complete photos, red titles with rule`);
   }
+  }
+  {
+  // Catering block (odd/tasks/new-photos-catering.md S2) and the new dish photos (S1) in the browser.
+  for (const width of [1440, 1122, 800, 375]) {
+    for (const route of ['/', '/menu']) {
+      await cdp('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<=600});
+      const loaded=new Promise(resolve=>events.set('Page.loadEventFired',resolve));await cdp('Page.navigate',{url:new URL(route,target).href});await loaded;
+      await evaluate(`document.fonts.ready`);
+      await evaluate(`document.querySelector('#catering').scrollIntoView({block:'start',behavior:'instant'})`);
+      await evaluate(`Promise.all([...document.querySelectorAll('#catering img')].map(i=>Promise.race([i.decode().catch(()=>{}),new Promise(r=>setTimeout(r,4000))])))`);
+      const m = await evaluate(`(()=>{const s=document.querySelector('#catering');const r=e=>e.getBoundingClientRect();const imgs=[...s.querySelectorAll('img')];const cta=s.querySelector('.catering-cta');const prev=s.previousElementSibling;return {loaded:imgs.filter(i=>i.complete&&i.naturalWidth>0).length,visibleImgs:imgs.filter(i=>{const b=r(i);return b.width>40&&b.left>=r(s).left-2&&b.right<=r(s).right+2}).length,cta:{w:r(cta).width,h:r(cta).height,href:cta.getAttribute('href')},prevId:prev?prev.id:null,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth}})()`);
+      assert.equal(m.overflow, false, `${width}${route}: no horizontal overflow`);
+      assert.equal(m.loaded, 3, `${width}${route}: three catering photos load`);
+      assert.ok(m.visibleImgs >= (width <= 760 ? 1 : 3), `${width}${route}: photos visible (${m.visibleImgs})`);
+      assert.ok(m.cta.h >= 44 && m.cta.href.startsWith('https://wa.me/573116341836?text='), `${width}${route}: 44px WhatsApp quote button`);
+      assert.equal(m.prevId, route === '/' ? 'carta' : 'postres', `${width}${route}: catering follows ${route === '/' ? 'the specialties' : 'Postres'}`);
+      const shot=await cdp('Page.captureScreenshot',{format:'png'});writeFileSync(path.join(output,`catering-${width}${route === '/' ? '-home' : '-menu'}.png`),Buffer.from(shot.data,'base64'));
+      console.log(`PASS ${width}px ${route}: catering after ${m.prevId}, 3 photos loaded, quote button`);
+    }
+  }
+  // New dish photos render in the menu at desktop width.
+  await cdp('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
+  const menuLoaded=new Promise(resolve=>events.set('Page.loadEventFired',resolve));await cdp('Page.navigate',{url:new URL('/menu',target).href});await menuLoaded;
+  for (const id of ['entradas', 'mero-mexico']) {
+    await evaluate(`document.querySelector('#${id}').scrollIntoView({block:'start',behavior:'instant'})`);
+    await evaluate(`Promise.all([...document.querySelectorAll('#${id} img')].map(i=>Promise.race([i.decode().catch(()=>{}),new Promise(r=>setTimeout(r,4000))])))`);
+    const shot=await cdp('Page.captureScreenshot',{format:'png'});writeFileSync(path.join(output,`new-photos-1440-${id}.png`),Buffer.from(shot.data,'base64'));
+  }
+  const broken = await evaluate(`[...document.querySelectorAll('.menu-products .product-grid img')].filter(i=>i.complete&&i.naturalWidth===0).map(i=>i.alt)`);
+  assert.deepEqual(broken, [], 'no broken dish photos');
+  console.log('PASS 1440px /menu: new dish photos render, none broken');
   }
   await send('Browser.close');
 } catch (error) {

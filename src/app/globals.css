@@ -33,14 +33,14 @@ a:focus-visible, button:focus-visible { outline: 3px solid #146979; outline-offs
 .hero-side-textile { position: absolute; left: 0; top: 0; bottom: 0; z-index: 1; width: clamp(16px, 1.9vw, 28px); background: url('/reference/hero-side-textile.webp') left top / 100% auto repeat-y; box-shadow: 2px 0 4px #5b371a40; pointer-events: none; }
 .hero::after { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse at 30% 50%, transparent 55%, #8a5a2a2e 100%); }
 .textile-top { position: absolute; top: 0; right: 0; width: 48%; height: 18px; background: url('/reference/textile.webp') center / auto 22px repeat-x; }
-.header-inner { width: calc(100% - 2 * clamp(12px, 2vw, 28px)); min-height: 68px; display: grid; grid-template-columns: 180px minmax(0, 1fr) 215px; align-items: center; gap: 1rem; border: 1px solid #fff1d1aa; border-radius: 3px 9px 5px 3px; background-color: #f8e9c9; background-image: radial-gradient(ellipse at 20% 40%, #d0aa6420, transparent 60%), radial-gradient(ellipse at 78% 70%, #fff8e699, transparent 65%); box-shadow: 0 1px 5px #5b30152e, inset 0 1px 0 #fff8e8aa; }
+.header-inner { width: calc(100% - 2 * clamp(12px, 2vw, 28px)); min-height: 68px; display: grid; grid-template-columns: 180px minmax(0, 1fr) 215px; align-items: center; gap: 1rem; border: 1px solid #fff1d1aa; border-radius: 3px 9px 5px 3px; background-color: #f8e9c9; background-image: linear-gradient(#f8e9c933, #e5c68d22), url('/reference/paper-seamless.webp'); box-shadow: 0 1px 5px #5b30152e, inset 0 1px 0 #fff8e8aa; }
 .brand { display: inline-flex; align-items: center; }
 .brand-logo-frame { display: block; position: relative; width: 106px; height: 150px; flex-shrink: 0; }
 .brand-logo { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 150px; height: 150px; max-width: none; object-fit: contain; }
 .header-inner .brand { position: relative; z-index: 3; align-self: start; align-items: flex-start; height: 68px; padding-left: 55px; }
 .header-inner .brand-logo-frame { top: -18px; }
 @media (min-width: 951px) {
-  .site-header[data-page='menu'] .header-inner { padding-right: 72px; }
+  .site-header .header-inner { padding-right: 72px; }
 }
 @media (max-width: 950px) {
   .site-header[data-page='menu'] .header-inner nav { padding-right: 54px; }
@@ -53,7 +53,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid #146979; outline-offs
   .site-header .header-inner .brand { padding-left: 22px; }
   .site-header .header-inner .brand-logo-frame { width: 85px; height: 120px; }
   .site-header .header-inner .brand-logo { width: 120px; height: 120px; }
-  .site-header[data-page='menu'] .header-inner { padding-right: 72px; }
+  .site-header .header-inner { padding-right: 72px; }
   .site-header[data-page='menu'] .header-inner nav { padding-right: 0; }
 }
 nav { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: clamp(1rem, 3vw, 2rem); }
@@ -306,7 +306,7 @@ a.whatsapp-float-button { cursor: pointer; }
 @media (max-width: 700px) {
   .header-nav { display: flex; justify-content: flex-end; align-items: center; min-width: 0; }
   .site-header[data-page='menu'] .header-inner .header-nav { padding-right: 62px; }
-  .site-header .header-inner nav, .site-header[data-page='menu'] .header-inner nav { position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px); display: none; flex-direction: column; align-items: stretch; gap: 0; padding: .35rem 0; border: 1px solid #d2b477; border-radius: .6rem; background: #f8e9c9; box-shadow: 0 10px 24px #3b1f0e40; }
+  .site-header .header-inner nav, .site-header[data-page='menu'] .header-inner nav { position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px); display: none; flex-direction: column; align-items: stretch; gap: 0; padding: .35rem 0; border: 1px solid #d2b477; border-radius: .6rem; background: #f8e9c9 url('/reference/paper-seamless.webp') repeat; box-shadow: 0 10px 24px #3b1f0e40; }
   .site-header .header-inner nav[data-open='true'] { display: flex; }
   .site-header .header-inner nav a { display: flex; align-items: center; min-height: 48px; padding: .4rem 1.2rem; font-size: .95rem; border-bottom: 1px solid #e3cc9f; }
   .site-header .header-inner nav a:last-child { border-bottom: 0; }
@@ -316,14 +316,12 @@ a.whatsapp-float-button { cursor: pointer; }
   .nav-toggle-icon { width: 26px; height: 26px; }
 }
 
-/* Nuestras Especialidades: one-row infinite slider (behavior in specialty-carousel.tsx): 3 cards from 761px, 1 on phones.
+/* Nuestras Especialidades: one-row manual carousel (behavior in specialty-carousel.tsx): 3 cards from 761px, 1 on phones.
    The scrollbar stays hidden because the loop silently re-anchors the scroll position. */
 .specialty-carousel { display: flex; flex-direction: column; }
 .specialty-carousel .specialty-grid { position: relative; flex-wrap: nowrap; gap: 1.2rem; padding: .4rem 6px 1rem; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 6px; scrollbar-width: none; }
 .specialty-carousel .specialty-grid::-webkit-scrollbar { display: none; }
 .specialty-carousel .specialty-grid > .specialty-card { flex: 0 0 calc((100% - 2 * 1.2rem) / 3); scroll-snap-align: start; }
-.carousel-pause { display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; margin: .2rem auto 0; padding: .3rem 1rem; border: 1px solid #c79b55; border-radius: 999px; background: #fff6e2; color: #4b3021; font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; }
-.carousel-pause svg { width: 14px; height: 14px; }
 @media (max-width: 760px) {
   /* The gap must cover the side padding so no sliver of the previous card shows at the left edge. */
   .specialty-carousel .specialty-grid { gap: max(.9rem, calc(var(--space-page) + 1px)); margin-inline: calc(-1 * var(--space-page)); padding: .3rem var(--space-page) .9rem; scroll-padding-inline: var(--space-page); }
@@ -377,3 +375,46 @@ a.whatsapp-float-button { cursor: pointer; }
   .footer-links { width: 100%; align-items: center; padding-right: 0; }
   .site-footer nav { justify-content: center; }
 }
+
+/* "Fiestas en casa · Catering": additional service below the home specialties and at the end of the menu. */
+.catering { padding-block: 1rem 1.6rem; }
+.catering-inner { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); align-items: center; gap: 1.2rem 1.6rem; padding: 1.2rem 1.4rem; border: 2px solid #e2a92b; border-radius: 1rem; background: linear-gradient(#fff9ea, #fdeecb); box-shadow: 0 0 0 4px #f6d48a44, 0 8px 18px #5b371a26; }
+.catering-copy { display: grid; gap: .55rem; justify-items: start; }
+.catering-copy > p { margin: 0; font-size: 1.05rem; line-height: 1.5; color: #4b3021; }
+.catering-copy .catering-kicker { padding: .2rem .7rem; border-radius: 999px; background: #b6241b; color: #fff8e7; font-size: .78rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.catering-copy h2 { margin: 0; }
+.catering-cta { min-width: 0; margin-top: .3rem; font-size: 1.5rem; }
+.catering-status { font-size: var(--text-note); }
+.catering-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; margin: 0; padding: 0; list-style: none; }
+.catering-gallery img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: cover; border-radius: .7rem; box-shadow: 0 3px 10px #57341633; }
+@media (max-width: 760px) {
+  .catering-inner { padding: 1rem; }
+  .catering-copy .flourish { font-size: 2rem; }
+  /* Phones: the photos become a swipeable row with the next one peeking. */
+  .catering-gallery { display: flex; gap: .7rem; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .catering-gallery li { flex: 0 0 70%; scroll-snap-align: start; }
+  .catering-gallery::-webkit-scrollbar { display: none; }
+}
+
+/* Home follow-up (odd/tasks/home-hero-specialties.md): complete specialty photos, swipe hint with desktop arrows,
+   and the hero's rotating dish photos. */
+.specialty-card .card-photo:not(.dish-logo) { height: auto; aspect-ratio: 4 / 3; object-fit: contain; }
+.specialty-controls { display: flex; align-items: center; justify-content: center; gap: .9rem; margin-top: .2rem; }
+.specialty-hint { display: inline-flex; align-items: center; gap: .45rem; margin: 0; color: #634525; font-size: .95rem; font-weight: 500; }
+.specialty-hint svg { width: 22px; height: 22px; color: #b6241b; }
+.specialty-arrow { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid #c79b55; border-radius: 50%; background: #fff6e2; color: #b6241b; box-shadow: 0 2px 6px #57341622; cursor: pointer; }
+.specialty-arrow:hover, .specialty-arrow:focus-visible { background: #b6241b; border-color: #8e1c14; color: #fff8e7; }
+.specialty-arrow svg { width: 22px; height: 22px; }
+@media (max-width: 760px) { .specialty-arrow { display: none; } }
+
+.hero-photo .hero-slide { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: 0; transition: opacity .9s ease; }
+.hero-photo .hero-slide.is-active { opacity: 1; }
+.hero-pause { position: absolute; right: 1rem; bottom: 1rem; z-index: 2; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid #fff1d1aa; border-radius: 50%; background: #27190f99; color: #fff8e7; cursor: pointer; }
+.hero-pause:hover, .hero-pause:focus-visible { background: #b6241b; }
+.hero-pause svg { width: 16px; height: 16px; }
+@media (max-width: 600px) {
+  /* Phones: the photo sits below the text; a 4:3 frame shows the whole dish instead of a thin strip. */
+  .hero-photo { aspect-ratio: 4 / 3; }
+  .hero-photo .hero-slide { height: 100%; aspect-ratio: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .hero-photo .hero-slide { transition: none; } }

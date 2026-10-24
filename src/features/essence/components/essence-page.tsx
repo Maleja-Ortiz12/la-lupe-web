@@ -13,7 +13,7 @@ const essenceStory = [
   {
     title: 'Tacos y taquizas',
     text: 'Tacos al pastor, carnitas, birria, cochinita y más, y taquizas para 2, 4 o 6 personas.',
-    image: '/dishes/taquiza.webp',
+    image: '/dishes/taquiza-e4ea759b.webp',
     alt: 'Taquiza con tortillas y salsas',
   },
   {

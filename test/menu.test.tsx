@@ -68,7 +68,7 @@ test('items without a price stay addable and say so', () => {
 test('menu uses the processed photos for dishes that have one', async () => {
   const { existsSync } = await import('node:fs');
   const markup = html();
-  for (const slug of ['guacamole-con-chicharron', 'sopa-de-tortillas', 'pozole', 'fajitas', 'taquiza', 'tacos-de-pastor', 'steak-lupe', 'hot-pepper-steak', 'enchiladas-verdes', 'flautas', 'quesadillas', 'tamales-mexicanos', 'bunuelos-mexicanos', 'helado-frito', 'churros']) {
+  for (const slug of ['guacamole-con-chicharron', 'sopa-de-tortillas', 'pozole', 'fajitas', 'taquiza-e4ea759b', 'tacos-de-pastor', 'steak-lupe', 'hot-pepper-steak', 'enchiladas-verdes', 'flautas', 'quesadillas', 'tamales-mexicanos', 'bunuelos-mexicanos', 'helado-frito', 'churros']) {
     assert.ok(markup.includes(`%2Fdishes%2F${slug}.webp`) || markup.includes(`/dishes/${slug}.webp`), slug);
     assert.ok(existsSync(`public/dishes/${slug}.webp`), `file ${slug}`);
   }

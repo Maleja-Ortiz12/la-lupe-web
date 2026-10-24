@@ -6,6 +6,8 @@ import { Flourish } from './flourish';
 import { MexicanOrnament } from './mexican-ornament';
 import { WhatsAppLink } from './whatsapp-link';
 import { SpecialtyCarousel } from './specialty-carousel';
+import { CateringService } from './catering-service';
+import { HeroDishSlides } from './hero-dish-slides';
 import { contact, whatsappMessages, whatsappUrl } from '@/shared/config/contact';
 import { location } from '@/shared/config/location';
 import { formatPrice, hasOptions, starItems, startingPrice } from '@/features/menu/menu-data';
@@ -22,9 +24,7 @@ export function HomePage({ whatsappNumber = contact.whatsappNumber }: { whatsapp
       <main id="contenido">
         <section id="inicio" className="hero" aria-labelledby="hero-title">
           <span className="hero-side-textile" aria-hidden="true" />
-          <div className="hero-photo">
-            <Image src="/reference/hero.webp" width={587} height={283} alt="Fajitas con pimentones, tortillas, guacamole y pico de gallo" priority unoptimized />
-          </div>
+          <HeroDishSlides />
           <div className="container hero-inner">
             <div className="hero-copy">
               <h1 id="hero-title">Sabor Mexicano<br /><span>en Cada Encuentro</span></h1>
@@ -65,6 +65,7 @@ export function HomePage({ whatsappNumber = contact.whatsappNumber }: { whatsapp
             <p className="section-note">Mira la carta completa con precios en el <a href="/menu">menú</a>.</p>
           </div>
         </section>
+        <CateringService whatsappNumber={whatsappNumber} />
         <section id="nosotros" className="essence" aria-labelledby="essence-title">
           <div className="essence-image">
             <Image className="essence-backdrop" src="/reference/esencia-brandless.webp" width={576} height={231} alt="Composición decorativa de madera y textiles mexicanos" unoptimized />

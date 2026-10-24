@@ -3,7 +3,7 @@ import test from 'node:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MenuPage } from '../src/features/menu/components/menu-page';
 import { HomePage } from '../src/features/presentation/components/home-page';
-import { hasOptions, menuCategories } from '../src/features/menu/menu-data';
+import { hasOptions, menuCategories, starItems } from '../src/features/menu/menu-data';
 
 test('categories show selectable products first and preserve source order within both groups', () => {
   const html = renderToStaticMarkup(<MenuPage />);
@@ -28,5 +28,8 @@ test('every catalog product without a dish photograph uses the real logo, not in
     assert.ok(card.includes('Logo de La Lupe'), item.id);
   }
   assert.doesNotMatch(html + home, /class="star-card-art"/);
-  assert.match(home, /class="card-photo dish-logo"/);
+  // Every star dish now has a real photo (odd/tasks/new-photos-catering.md), so the home logo fallback only
+  // appears while a star dish still lacks one.
+  const starsWithoutPhoto = starItems.filter(item => !item.image).length;
+  assert.equal((home.match(/class="card-photo dish-logo"/g) ?? []).length, starsWithoutPhoto);
 });

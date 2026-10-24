@@ -1,15 +1,26 @@
 'use client';
 
-import { Children, cloneElement, isValidElement, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactElement, type ReactNode } from 'react';
+import { Children, cloneElement, isValidElement, useLayoutEffect, useRef, useSyncExternalStore, type ReactElement, type ReactNode } from 'react';
 
-const AUTOPLAY_MS = 5000;
 const PHONE_QUERY = '(max-width: 760px)';
 const subscribeNever = () => () => {};
 
-// Nuestras Especialidades: a single horizontal row (3 cards from 761px, 1 on phones) that advances every
-// 5 seconds by 2 cards (1 on phones) and loops forever. After hydration the cards are rendered three times;
-// the outer copies are inert clones, and whenever the row settles on a clone it is silently re-anchored on
-// the matching real card. Autoplay pauses while touched/focused/hovered and can be paused (WCAG 2.2.2).
+// Scroll position of every card relative to the first one, and the card currently at the start of the row.
+const offsets = (element: HTMLElement) => {
+  const cards = [...element.children] as HTMLElement[];
+  return cards.map(card => card.offsetLeft - cards[0].offsetLeft);
+};
+const nearest = (element: HTMLElement) => {
+  const positions = offsets(element);
+  return positions.reduce((best, position, index) =>
+    Math.abs(position - element.scrollLeft) < Math.abs(positions[best] - element.scrollLeft) ? index : best, 0);
+};
+
+// Nuestras Especialidades: a single horizontal row (3 cards from 761px, 1 on phones) that the visitor moves by
+// swiping or with the ‹ › buttons (2 cards per step from 761px, 1 on phones); it never moves by itself
+// (odd/tasks/home-hero-specialties.md S3). After hydration the cards are rendered three times; the outer copies
+// are inert clones, and whenever the row settles on a clone it is silently re-anchored on the matching real card,
+// so the row continues endlessly in both directions.
 export function SpecialtyCarousel({ children }: { children: ReactNode }) {
   const grid = useRef<HTMLDivElement>(null);
   const items = Children.toArray(children).filter(isValidElement) as ReactElement<Record<string, unknown>>[];
@@ -18,38 +29,18 @@ export function SpecialtyCarousel({ children }: { children: ReactNode }) {
   // through the real cards, and the loop clones only appear once the client can re-anchor them.
   const hydrated = useSyncExternalStore(subscribeNever, () => true, () => false);
   const looping = hydrated && count > 1;
-  const [paused, setPaused] = useState(false);
-  const [engaged, setEngaged] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
-
-  useEffect(() => {
-    const query = matchMedia('(prefers-reduced-motion: reduce)');
-    const update = () => setReducedMotion(query.matches);
-    update();
-    query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
-  }, []);
 
   useLayoutEffect(() => {
     const element = grid.current;
     if (!looping || !element) return;
-    const offsets = () => {
-      const cards = [...element.children] as HTMLElement[];
-      return cards.map(card => card.offsetLeft - cards[0].offsetLeft);
-    };
-    const nearest = () => {
-      const positions = offsets();
-      return positions.reduce((best, position, index) =>
-        Math.abs(position - element.scrollLeft) < Math.abs(positions[best] - element.scrollLeft) ? index : best, 0);
-    };
     const jump = (index: number) => {
       element.style.scrollBehavior = 'auto';
-      element.scrollLeft = offsets()[index];
+      element.scrollLeft = offsets(element)[index];
       element.style.scrollBehavior = '';
     };
     // Keep the visible position on the middle (real) copy so the row can always continue either way.
     const reanchor = () => {
-      const index = nearest();
+      const index = nearest(element);
       if (index < count) jump(index + count);
       else if (index >= 2 * count) jump(index - count);
     };
@@ -62,49 +53,35 @@ export function SpecialtyCarousel({ children }: { children: ReactNode }) {
     return () => { clearTimeout(settle); element.removeEventListener('scroll', onScroll); resize.disconnect(); };
   }, [looping, count]);
 
-  useEffect(() => {
-    if (!looping || paused || engaged || reducedMotion) return;
-    const timer = setInterval(() => {
-      const element = grid.current;
-      if (!element || document.visibilityState !== 'visible') return;
-      const cards = [...element.children] as HTMLElement[];
-      const positions = cards.map(card => card.offsetLeft - cards[0].offsetLeft);
-      const current = positions.reduce((best, position, index) =>
-        Math.abs(position - element.scrollLeft) < Math.abs(positions[best] - element.scrollLeft) ? index : best, 0);
-      const step = matchMedia(PHONE_QUERY).matches ? 1 : 2;
-      const target = Math.min(current + step, positions.length - 1);
-      element.scrollTo({ left: positions[target], behavior: 'smooth' });
-    }, AUTOPLAY_MS);
-    return () => clearInterval(timer);
-  }, [looping, paused, engaged, reducedMotion]);
+  const move = (direction: 1 | -1) => {
+    const element = grid.current;
+    if (!element) return;
+    const positions = offsets(element);
+    const step = matchMedia(PHONE_QUERY).matches ? 1 : 2;
+    const target = Math.min(Math.max(nearest(element) + direction * step, 0), positions.length - 1);
+    element.scrollTo({ left: positions[target], behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  };
 
   const clones = (copy: string) => items.map(item =>
     cloneElement(item, { key: `${copy}-${String(item.key)}`, 'aria-hidden': true, inert: true, 'data-clone': '' }));
 
   return (
     <div className="specialty-carousel">
-      <div
-        ref={grid}
-        className="specialty-grid"
-        role="group"
-        aria-label="Nuestras Especialidades: desliza para ver más"
-        onPointerEnter={() => setEngaged(true)}
-        onPointerLeave={() => setEngaged(false)}
-        onTouchStart={() => setEngaged(true)}
-        onTouchEnd={() => setEngaged(false)}
-        onFocus={() => setEngaged(true)}
-        onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setEngaged(false); }}
-      >
+      <div ref={grid} className="specialty-grid" role="group" aria-label="Nuestras Especialidades: desliza para ver más">
         {looping ? [...clones('before'), ...items, ...clones('after')] : items}
       </div>
-      {!reducedMotion && (
-        <button type="button" className="carousel-pause" onClick={() => setPaused(value => !value)}>
-          <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-            {paused ? <path d="m7 4 9 6-9 6Z" fill="currentColor" /> : <path d="M6 4h3v12H6Zm5 0h3v12h-3Z" fill="currentColor" />}
-          </svg>
-          <span>{paused ? 'Reanudar' : 'Pausar'}</span><span className="visually-hidden"> avance automático de especialidades</span>
+      <div className="specialty-controls">
+        <button type="button" className="specialty-arrow specialty-arrow-prev" aria-label="Ver especialidades anteriores" onClick={() => move(-1)}>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m14.5 5-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
-      )}
+        <p className="specialty-hint">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 11V6a1.6 1.6 0 0 1 3.2 0v4.5m0-1.8a1.6 1.6 0 0 1 3.2 0v2m0-1a1.6 1.6 0 0 1 3.2 0v4.3c0 3.6-2.4 6-6 6h-1.2a5 5 0 0 1-4.2-2.3L4.6 14a1.6 1.6 0 0 1 2.6-1.9L9 14.3M3 4.5h4M3 4.5l1.6-1.6M3 4.5l1.6 1.6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <span>Desliza para ver más productos</span>
+        </p>
+        <button type="button" className="specialty-arrow specialty-arrow-next" aria-label="Ver más especialidades" onClick={() => move(1)}>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9.5 5 7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+      </div>
     </div>
   );
 }

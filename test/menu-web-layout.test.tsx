@@ -14,8 +14,9 @@ test('the desktop menu has a Categorías sidebar linking every section in order,
   assert.match(sidebar, /<p class="menu-sidebar-title" id="menu-sidebar-title">Categorías<\/p>/);
   assert.match(sidebar, /<nav[^>]*aria-labelledby="menu-sidebar-title"/);
   const links = [...sidebar.matchAll(/<a\b[^>]*href="#([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)];
-  assert.deepEqual(links.map(link => link[1]), ['platos-estrella', ...menuCategories.map(category => category.id)]);
-  const labels = ['Estrella', ...menuCategories.map(category => escape(category.title))];
+  // The catering service closes the menu (odd/tasks/new-photos-catering.md S2).
+  assert.deepEqual(links.map(link => link[1]), ['platos-estrella', ...menuCategories.map(category => category.id), 'catering']);
+  const labels = ['Estrella', ...menuCategories.map(category => escape(category.title)), 'Catering'];
   links.forEach((link, index) => {
     assert.match(link[2], /<svg\b[^>]*class="menu-sidebar-icon"[^>]*aria-hidden="true"/, `${labels[index]} icon`);
     assert.ok(link[2].includes(`<span>${labels[index]}</span>`), labels[index]);

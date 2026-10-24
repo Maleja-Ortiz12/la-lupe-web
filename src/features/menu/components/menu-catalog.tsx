@@ -7,11 +7,12 @@ import { Flourish } from '@/features/presentation/components/flourish';
 import { WhatsAppLink } from '@/features/presentation/components/whatsapp-link';
 import { menuCategories, starItems, formatPrice, hasOptions, startingPrice, itemOptions, requiredPicks, type MenuChoiceOption, type MenuItem } from '../menu-data';
 import { MenuSidebar } from './menu-sidebar';
+import { CateringService } from '@/features/presentation/components/catering-service';
 import { addToCart, changeQuantity, removeFromCart, cartHasPendingPrices, cartSubtotal, cartWhatsAppUrl, lineTotalLabel, menuProducts, productId, type CartLine } from '../cart';
 
 type AddHandler = (productId: string, quantity: number) => void;
 
-const sidebarSections = [{ id: 'platos-estrella', label: 'Estrella' }, ...menuCategories.map(category => ({ id: category.id, label: category.title }))];
+const sidebarSections = [{ id: 'platos-estrella', label: 'Estrella' }, ...menuCategories.map(category => ({ id: category.id, label: category.title })), { id: 'catering', label: 'Catering' }];
 
 function CartIcon() {
   return <svg className="action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 3h3l3 12h11l3-9H6M9 19h.01M18 19h.01" strokeLinecap="round" strokeLinejoin="round" /></svg>;
@@ -276,6 +277,7 @@ export function MenuCatalog({ whatsappNumber }: { whatsappNumber: string }) {
       <nav className="menu-category-nav" aria-label="Categorías del menú">
         <a href="#platos-estrella"><span aria-hidden="true">★ </span>Estrella</a>
         {menuCategories.map(category => <a key={category.id} href={`#${category.id}`}>{category.title}</a>)}
+        <a href="#catering">Catering</a>
       </nav>
       <button ref={cartButton} type="button" className="cart-jump" aria-haspopup="dialog" aria-controls="tu-pedido" aria-expanded={cartOpen} onClick={showCart}><CartIcon /><span className="cart-count" aria-hidden="true">{itemCount}</span><span className="visually-hidden">Ver carrito ({itemCount})</span></button>
       <p className="visually-hidden" role="status">{announcement}</p>
@@ -300,6 +302,7 @@ export function MenuCatalog({ whatsappNumber }: { whatsappNumber: string }) {
               <MobileCarousel title={category.title} items={category.items} scope={category.id} showPhoto={category.id !== 'bebidas' && category.id !== 'cocteles-y-chelas'} onAdd={onAdd} onOptions={openOptions} />
             </section>
           ))}
+          <CateringService whatsappNumber={whatsappNumber} variant="menu" />
         </div>
         <dialog id="opciones-producto" className="options-sheet" ref={sheetDialog} aria-labelledby="opciones-title" onClose={() => sheetTrigger.current?.focus({ preventScroll: true })} onClick={event => { if (event.target !== event.currentTarget) return; const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closeSheet(); }}>
           {sheet && <OptionsSheet key={sheet.open} item={sheet.item} variantId={sheet.variantId} showPhoto={sheet.showPhoto} onAdd={onAdd} onClose={closeSheet} />}

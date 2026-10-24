@@ -3,6 +3,7 @@ import test from 'node:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { HomePage } from '../src/features/presentation/components/home-page';
 import { metadata } from '../src/app/page-metadata';
+import { starItems } from '../src/features/menu/menu-data';
 
 const html = (whatsappNumber?: string) => renderToStaticMarkup(<HomePage whatsappNumber={whatsappNumber} />);
 
@@ -39,22 +40,24 @@ test('landing follows the supplied reference sections and uses local reference a
     assert.ok(markup.includes(label), label);
   }
   assert.doesNotMatch(markup, /viewBox="0 0 600 460"|El sabor nos|Para abrir/);
-  for (const asset of ['hero.webp', 'esencia-brandless.webp']) {
-    assert.ok(markup.includes(`/reference/${asset}`), asset);
-  }
+  // The hero now rotates real dish photos (odd/tasks/home-hero-specialties.md S2); essence keeps its reference art.
+  assert.ok(markup.includes('/reference/esencia-brandless.webp'), 'esencia-brandless.webp');
 });
 
 test('all brand placements use the supplied original logo without tinting or the concept logo', () => {
   const markup = decodeURIComponent(html());
-  // Three original brand placements plus three requested missing-photo placeholders.
-  assert.equal((markup.match(/<img\b[^>]*\bsrc="[^"]*\/brand\/la-lupe\.png[^"]*"/g) ?? []).length, 6);
+  // Three original brand placements plus one logo placeholder per star dish still without a photo
+  // (none since odd/tasks/new-photos-catering.md).
+  const placeholders = starItems.filter(item => !item.image).length;
+  assert.equal((markup.match(/<img\b[^>]*\bsrc="[^"]*\/brand\/la-lupe\.png[^"]*"/g) ?? []).length, 3 + placeholders);
   assert.doesNotMatch(markup, /\/reference\/logo\.webp/);
   assert.match(markup, /Logotipo original de La Lupe/);
 });
 
 test('reference flourishes and location/contact icons use decorative SVG instead of text symbols', () => {
   const markup = html();
-  assert.equal((markup.match(/class="flourish-garnish/g) ?? []).length, 4);
+  // Specialties, essence and the catering service (odd/tasks/new-photos-catering.md) headings: two leaves each.
+  assert.equal((markup.match(/class="flourish-garnish/g) ?? []).length, 6);
   assert.match(markup, /data-icon="location"/);
   assert.match(markup, /data-icon="clock"/);
   assert.doesNotMatch(markup, /⌖|◷/);
@@ -77,12 +80,11 @@ test('essence and footer retain the reference decorative details', () => {
   assert.equal((markup.match(/data-ornament="mexican"/g) ?? []).length, 2);
 });
 
-test('floating WhatsApp has no pause control while preserving the contact link and carousel pause', () => {
+test('floating WhatsApp has no pause control while preserving the contact link', () => {
   const markup = html();
   assert.doesNotMatch(markup, /class="motion-toggle"|Pausar animación de WhatsApp|Reanudar animación de WhatsApp/);
   assert.match(markup, /aria-label="Escríbenos por WhatsApp"/);
   assert.match(markup, /https:\/\/wa\.me\/573116341836/);
-  assert.match(markup, /class="carousel-pause"/);
 });
 
 test('top-left corner carries the supplied leaves and reference side textile border', () => {
@@ -145,7 +147,7 @@ test('home Nuestras Especialidades shows the star dishes with price and a link t
     assert.ok(cards[index].includes(`href="/menu#plato-${id}"`), `${name} link`);
     assert.match(cards[index], /Plato estrella/);
   }
-  for (const slug of ['taquiza', 'flautas', 'quesadillas', 'tacos-de-pastor']) assert.ok(section.includes(`%2Fdishes%2F${slug}.webp`) || section.includes(`/dishes/${slug}.webp`), slug);
+  for (const slug of ['taquiza-e4ea759b', 'flautas', 'quesadillas', 'tacos-de-pastor']) assert.ok(section.includes(`%2Fdishes%2F${slug}.webp`) || section.includes(`/dishes/${slug}.webp`), slug);
   assert.doesNotMatch(section, /imagen conceptual de referencia|Ingredientes y presentación por confirmar/);
 });
 
@@ -157,15 +159,29 @@ test('every star dish has a menu anchor for the home links', async () => {
   }
 });
 
-test('specialties are a one-row slider with a visible pause control for the 5-second autoplay', () => {
+test('specialties are a manual one-row carousel with a swipe hint and desktop arrows, without autoplay or pause', () => {
   const markup = renderToStaticMarkup(<HomePage />);
   const carousel = markup.match(/<div class="specialty-carousel"[\s\S]*?<\/section>/)?.[0] ?? '';
   assert.match(carousel, /<div class="specialty-grid"[^>]*aria-label="Nuestras Especialidades: desliza para ver más"/);
   assert.equal((carousel.match(/<article class="specialty-card/g) ?? []).length, 7);
   // Loop clones are client-only, so the server markup (and a no-JavaScript visit) lists each dish once.
   assert.doesNotMatch(carousel, /data-clone|inert=""/);
-  const pause = carousel.match(/<button\b[^>]*class="carousel-pause"[^>]*>[\s\S]*?<\/button>/)?.[0] ?? '';
-  // The accessible name is the visible text plus a hidden suffix (WCAG 2.5.3), never a different aria-label.
-  assert.doesNotMatch(pause, /aria-label=/);
-  assert.match(pause.replace(/<[^>]+>/g, ''), /^Pausar avance automático de especialidades$/);
+  // odd/tasks/home-hero-specialties.md S3: no moving carousel, so no pause control either.
+  assert.doesNotMatch(carousel, /carousel-pause|Pausar|Reanudar/);
+  assert.match(carousel, /<p class="specialty-hint"[^>]*>[\s\S]*Desliza para ver más productos[\s\S]*<\/p>/);
+  assert.match(carousel, /<button\b[^>]*class="specialty-arrow specialty-arrow-prev"[^>]*aria-label="Ver especialidades anteriores"/);
+  assert.match(carousel, /<button\b[^>]*class="specialty-arrow specialty-arrow-next"[^>]*aria-label="Ver más especialidades"/);
+});
+
+test('the Sabor Mexicano hero rotates six real dish photos with an accessible pause control', () => {
+  const hero = renderToStaticMarkup(<HomePage />).match(/<section id="inicio"[\s\S]*?<\/section>/)?.[0] ?? '';
+  const slides = hero.match(/<img\b[^>]*class="hero-slide[^"]*"[^>]*>/g) ?? [];
+  assert.equal(slides.length, 6);
+  for (const slug of ['fajitas', 'tacos-de-birria', 'nachos-grandes', 'carne-a-la-tampiquena', 'entrada-mixta', 'taquiza-e4ea759b']) {
+    assert.ok(slides.some(slide => slide.includes(`/dishes/${slug}.webp`) || slide.includes(`%2Fdishes%2F${slug}.webp`)), slug);
+  }
+  assert.equal(slides.filter(slide => slide.includes('is-active')).length, 1, 'one visible photo at a time');
+  assert.ok(slides.every(slide => /alt="[^"]{6,}"/.test(slide)), 'every photo is described');
+  assert.match(hero, /<button\b[^>]*class="hero-pause"[^>]*aria-label="Pausar fotos de platos"/);
+  assert.doesNotMatch(hero, /\/reference\/hero\.webp/);
 });

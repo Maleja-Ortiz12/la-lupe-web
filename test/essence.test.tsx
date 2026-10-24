@@ -13,7 +13,7 @@ test('essence describes the restaurant in three truthful parts with local images
   }
   assert.equal((section.match(/class="essence-story-card"/g) ?? []).length, 3);
   assert.doesNotMatch(section, /<figcaption>/);
-  for (const asset of ['guacamole-con-chicharron.webp', 'taquiza.webp', 'fajitas.webp']) {
+  for (const asset of ['guacamole-con-chicharron.webp', 'taquiza-e4ea759b.webp', 'fajitas.webp']) {
     assert.ok(section.includes(`/dishes/${asset}`));
   }
   assert.doesNotMatch(section, /La historia y descripción del restaurante están pendientes/);

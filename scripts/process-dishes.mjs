@@ -1,8 +1,9 @@
 // Retouches the supplied dish photos in `images/` (phone photos) and `images/menu-pdf/` (photos extracted
 // from `images/Menu Lupe 2025 Vertical.pdf`) into consistent menu assets in `public/dishes/`.
 // Only photographic corrections (crop, exposure, color transfer to the reference palette, sharpening, vignette);
-// no generative edits, so every plate keeps its real appearance. Usage: node scripts/process-dishes.mjs
-import { mkdirSync } from 'node:fs';
+// no generative edits, so every plate keeps its real appearance.
+// Usage: node scripts/process-dishes.mjs [slug ...]   (no slug = every photo; slugs = only those).
+import { copyFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
@@ -23,22 +24,38 @@ const dishes = [
   { file: 'Hoy pepper steak.jpeg', slug: 'hot-pepper-steak', brightness: 1.1 },
   { file: 'Helado frito.jpeg', slug: 'bunuelos-mexicanos', brightness: 1.05, position: 'south' },
   { file: 'Buñuelos mexicanos.jpeg', slug: 'helado-frito', brightness: 1.08 },
-  { file: 'menu-pdf/pozole.png', slug: 'pozole', brightness: 1 },
-  { file: 'menu-pdf/fajitas.png', slug: 'fajitas', brightness: 1 },
-  { file: 'menu-pdf/taquiza.png', slug: 'taquiza', brightness: 1 },
   { file: 'menu-pdf/flautas.png', slug: 'flautas', brightness: 1, position: 'south' },
-  { file: 'menu-pdf/churros.png', slug: 'churros', brightness: 1.04 },
   { file: 'menu-pdf/chelas.png', slug: 'chelas', brightness: 1 },
+  // Owner's real photos (odd/tasks/new-photos-catering.md). Pozole, Fajitas Famosas, Taquiza and Churros
+  // replace the earlier crops from the PDF carta; the PDF sources stay in images/menu-pdf/.
+  { file: 'Pozole.jpeg', slug: 'pozole', brightness: 1.02 },
+  { file: 'fagitas Famosas.jpeg', slug: 'fajitas', brightness: 1.03 },
+  // The foreground salsa bowls are out of focus in the original; frame the sharp beers and meat plate instead.
+  { file: 'taquiza.jpeg', slug: 'taquiza', brightness: 1.02, position: 'north', cacheFile: 'taquiza-e4ea759b' },
+  { file: 'Churros.jpeg', slug: 'churros', brightness: 1.02 },
+  { file: 'Burritos.jpeg', slug: 'burritos', brightness: 1.03 },
+  { file: 'Carne a la Tampiqueña.jpeg', slug: 'carne-a-la-tampiquena', brightness: 1.02 },
+  { file: 'Combo mero mero.jpeg', slug: 'combo-mero-mero', brightness: 1.03 },
+  { file: 'Esquite.jpeg', slug: 'esquite', brightness: 1.02 },
+  { file: 'Nachos grandes.jpeg', slug: 'nachos-grandes', brightness: 1.02 },
+  { file: 'entrada Mixta.jpeg', slug: 'entrada-mixta', brightness: 1.03 },
+  { file: 'tacos de birria.jpeg', slug: 'tacos-de-birria', brightness: 1.02 },
+  { file: 'tinga de pollo.jpeg', slug: 'tinga-de-pollo', brightness: 1.02 },
+  // "Fiestas en casa" catering: portrait 3:4 frames in public/catering/.
+  { file: 'Fiestas en casa caterig1.jpeg', slug: 'fiestas-en-casa-1', brightness: 1.06, dir: 'catering', width: 720, height: 960 },
+  { file: 'Fiestas en casa caterig2.jpeg', slug: 'fiestas-en-casa-2', brightness: 1.06, dir: 'catering', width: 720, height: 960 },
+  { file: 'Fiestas en casa caterig3.jpeg', slug: 'fiestas-en-casa-3', brightness: 1.06, dir: 'catering', width: 720, height: 960 },
 ];
 
-const output = fileURLToPath(new URL('../public/dishes/', import.meta.url));
-mkdirSync(output, { recursive: true });
+const publicDir = fileURLToPath(new URL('../public/', import.meta.url));
+const only = process.argv.slice(2);
+const unknown = only.filter(slug => !dishes.some(dish => dish.slug === slug));
+if (unknown.length) throw new Error(`Unknown slug(s): ${unknown.join(', ')}`);
+const selected = only.length ? dishes.filter(dish => only.includes(dish.slug)) : dishes;
 
 // Color transfer (Reinhard, in CIE Lab): each photo's mean and spread per channel are pulled toward
 // the palette of the menu reference art, so the whole set shares one warm tonality while keeping
 // its real background. `strength` < 1 keeps whites and food colors believable.
-const width = 960;
-const height = 720;
 const strength = 0.65;
 const references = ['menu-hero', 'menu-entradas', 'menu-fajitas', 'menu-taquiza'];
 
@@ -90,7 +107,7 @@ for (const name of references) {
 }
 const target = labStats(...referenceLab);
 
-const vignette = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+const vignette = (width, height) => Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
   <defs><radialGradient id="v" cx="50%" cy="50%" r="72%">
     <stop offset="55%" stop-color="#000" stop-opacity="0"/>
     <stop offset="100%" stop-color="#1a0d04" stop-opacity="0.4"/>
@@ -98,7 +115,9 @@ const vignette = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${w
   <rect width="100%" height="100%" fill="url(#v)"/>
 </svg>`);
 
-for (const dish of dishes) {
+for (const dish of selected) {
+  const { width = 960, height = 720, dir = 'dishes' } = dish;
+  mkdirSync(`${publicDir}${dir}`, { recursive: true });
   const pixels = await rawRgb(sharp(fileURLToPath(new URL(`../images/${dish.file}`, import.meta.url)))
     .rotate()
     .flatten({ background: '#ffffff' })
@@ -117,8 +136,10 @@ for (const dish of dishes) {
   }
   await sharp(labToRgb(lab), { raw: { width, height, channels: 3 } })
     .sharpen({ sigma: 0.8, m1: 0.7, m2: 1.4 })
-    .composite([{ input: vignette, blend: 'multiply' }])
+    .composite([{ input: vignette(width, height), blend: 'multiply' }])
     .webp({ quality: 82 })
-    .toFile(`${output}${dish.slug}.webp`);
-  console.log(`dishes/${dish.slug}.webp`);
+    .toFile(`${publicDir}${dir}/${dish.slug}.webp`);
+  // Keep the original URL available, but use a fresh URL in the app to bypass older optimized copies.
+  if (dish.cacheFile) copyFileSync(`${publicDir}${dir}/${dish.slug}.webp`, `${publicDir}${dir}/${dish.cacheFile}.webp`);
+  console.log(`${dir}/${dish.slug}.webp`);
 }

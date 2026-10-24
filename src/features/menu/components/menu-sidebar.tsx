@@ -16,6 +16,7 @@ const icons: Record<string, string> = {
   bebidas: 'M7 7h10l-1.5 13h-7ZM12 7l3-4h3M8 11h8',
   'cocteles-y-chelas': 'M5 4h14l-7 8ZM12 12v7M8 20h8M15 4l3-2',
   postres: 'M4 18h16v-6L4 12ZM4 12l16-4v4M8 9.5V7M12 8.5V6',
+  catering: 'M3 18h18M5 18a7 7 0 0 1 14 0M12 9V7M10 7h4',
 };
 
 // Sticky desktop navigation that marks the section currently in view (phones use the pill navigation).
@@ -30,7 +31,12 @@ export function MenuSidebar({ sections }: { sections: readonly SidebarSection[] 
       if (visible[0]) setCurrent(visible[0].target.id);
     }, { rootMargin: '-25% 0px -70% 0px' });
     targets.forEach(target => observer.observe(target));
-    return () => observer.disconnect();
+    // The last sections can never scroll up to that band, so the bottom of the page selects the last one.
+    const onScroll = () => {
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4 && targets.length) setCurrent(targets[targets.length - 1].id);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => { observer.disconnect(); window.removeEventListener('scroll', onScroll); };
   }, [sections]);
 
   return (

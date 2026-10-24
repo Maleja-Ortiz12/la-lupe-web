@@ -33,14 +33,14 @@ export const menuCategories: readonly MenuCategory[] = [
     title: 'Entradas',
     items: [
       { id: 'guacamole-con-chicharron', name: 'Guacamole con chicharrón', image: dish('guacamole-con-chicharron'), variants: single(33900) },
-      { id: 'esquite', name: 'Esquite', description: 'Auténtico antojito mexicano de maíz desgranado, hervido; combinado con mayonesa, limón, queso fresco, chili, cilantro y el toque de la lupe.', variants: single(33900) },
+      { id: 'esquite', name: 'Esquite', image: dish('esquite'), description: 'Auténtico antojito mexicano de maíz desgranado, hervido; combinado con mayonesa, limón, queso fresco, chili, cilantro y el toque de la lupe.', variants: single(33900) },
       { id: 'chilaquiles', name: 'Chilaquiles', description: 'Nachos bañados en salsa verde, recubiertos de pollo desmenuzado, queso y crema agria.', variants: single(33900) },
-      { id: 'nachos-grandes', name: 'Nachos grandes', star: true, description: 'Muchos nachos cubiertos de frijoles, carne molida, queso cheddar derretido, guacamole, crema agria y jalapeños.', variants: single(38900) },
+      { id: 'nachos-grandes', name: 'Nachos grandes', star: true, image: dish('nachos-grandes'), description: 'Muchos nachos cubiertos de frijoles, carne molida, queso cheddar derretido, guacamole, crema agria y jalapeños.', variants: single(38900) },
       {
         id: 'entrada-mixta',
         name: 'Entrada mixta',
         description: 'Flautas de pollo, quesadillas mixtas (carne y pollo) y fajita nachos mixtos. Acompañados de guacamole, crema agria y pico de gallo.',
-        image: '/reference/menu-entradas.webp',
+        image: dish('entrada-mixta'),
         layout: 'cards',
         variants: [{ id: 'x2', label: 'X2', price: 40900 }, { id: 'x4', label: 'X4', price: 81900 }, { id: 'x6', label: 'X6', price: 112900 }],
       },
@@ -84,7 +84,7 @@ export const menuCategories: readonly MenuCategory[] = [
         id: 'taquiza',
         name: 'Taquiza',
         star: true,
-        image: dish('taquiza'),
+        image: dish('taquiza-e4ea759b'),
         note: 'Elige 3 sabores para tu taquiza.',
         picks: { label: 'Sabores', count: 3, options: options('Al Pastor', 'Carnitas', 'Birria', 'Cochinita', 'Arrachera', 'Pescado', 'Camarón') },
         variants: [{ id: '2', label: '2 personas', price: 79900 }, { id: '4', label: '4 personas', price: 155900 }, { id: '6', label: '6 personas', price: 227900 }],
@@ -102,7 +102,7 @@ export const menuCategories: readonly MenuCategory[] = [
           options: [
             { value: 'Al Pastor', label: 'Al Pastor', image: dish('tacos-de-pastor') },
             { value: 'Carnitas', label: 'Carnitas', image: dish('tacos-de-carnitas') },
-            { value: 'Birria', label: 'Birria' },
+            { value: 'Birria', label: 'Birria', image: dish('tacos-de-birria') },
             { value: 'Cochinita', label: 'Cochinita' },
             { value: 'Arrachera', label: 'Arrachera' },
             { value: 'Pescado', label: 'Pescado' },
@@ -116,7 +116,7 @@ export const menuCategories: readonly MenuCategory[] = [
     id: 'carnes',
     title: 'Carnes',
     items: [
-      { id: 'carne-a-la-tampiquena', name: 'Carne a la tampiqueña', star: true, description: 'Fajita steak marinada acompañada de enchilada verde, queso monterey jack arroz, frijoles, cebolla caramelizada y tortillas.', variants: single(42900) },
+      { id: 'carne-a-la-tampiquena', name: 'Carne a la tampiqueña', star: true, image: dish('carne-a-la-tampiquena'), description: 'Fajita steak marinada acompañada de enchilada verde, queso monterey jack arroz, frijoles, cebolla caramelizada y tortillas.', variants: single(42900) },
       { id: 'steak-lupe', name: 'Steak lupe', image: dish('steak-lupe'), description: 'Fajita steak marinada cubierta de pico de gallo. Recubierta de queso monterey jack, acompañado de arroz, frijoles y tortillas.', variants: single(42900) },
       { id: 'hot-pepper-steak', name: 'Hot pepper steak', image: dish('hot-pepper-steak'), description: 'Fajita steak marinada cubierta de jalapeños frescos y habaneros, recubierto de queso monterey derretido. Acompañado de arroz, frijoles tortillas.', variants: single(42900) },
       { id: 'pollo-lupe', name: 'Pollo lupe', description: '(2) Pechugas de pollo marinadas en la salsa de la casa. Recubiertas con queso derretido monterey jack.', variants: single(42900) },
@@ -129,6 +129,7 @@ export const menuCategories: readonly MenuCategory[] = [
     items: [
       {
         id: 'burritos',
+        image: dish('burritos'),
         name: 'Burritos',
         description: 'Deliciosa tortilla de harina, rellena de la carne de tu elección, frijoles refritos, arroz, guacamole, crema agria y pico de gallo decorado con nuestro famoso chile con queso.',
         variants: single(34900),
@@ -159,8 +160,8 @@ export const menuCategories: readonly MenuCategory[] = [
         variants: single(35900),
         choice: protein('Carnitas', 'Pastor', 'Birria', 'Cochinita', 'Carne', 'Pollo'),
       },
-      { id: 'combo-mero-mero', name: 'Combo "mero mero"', star: true, description: 'Plato mixto de enchilada verde, crispy taco de carne, flauta de pollo, arroz, frijoles refritos y guacamole.', variants: single(42900) },
-      { id: 'tinga-de-pollo', name: 'Tinga de pollo', description: 'Delicioso pollo desmenuzado en guiso de tomate y chipotle, sobre una tostada de maíz acompañado de lechuga, aguacate, queso fresco y crema agria.', variants: single(42900) },
+      { id: 'combo-mero-mero', name: 'Combo "mero mero"', star: true, image: dish('combo-mero-mero'), description: 'Plato mixto de enchilada verde, crispy taco de carne, flauta de pollo, arroz, frijoles refritos y guacamole.', variants: single(42900) },
+      { id: 'tinga-de-pollo', name: 'Tinga de pollo', image: dish('tinga-de-pollo'), description: 'Delicioso pollo desmenuzado en guiso de tomate y chipotle, sobre una tostada de maíz acompañado de lechuga, aguacate, queso fresco y crema agria.', variants: single(42900) },
       { id: 'alambre-mexicano', name: 'Alambre Mexicano', description: 'Plato tradicional de carnes mixtas de pollo, res, cebollas, pimentones mixtos, portobellos, tocineta, recubiertas de queso blanco derretido. Acompañado de tortillas de maíz.', variants: single(40900) },
       { id: 'tamales-mexicanos', name: 'Tamales mexicanos', image: dish('tamales-mexicanos'), variants: single(null) },
     ],

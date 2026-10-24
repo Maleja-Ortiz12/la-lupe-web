@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 
-const usage = 'Usage: npm run test:mobile -- "<Chromium browser executable>" [http://127.0.0.1:3000] [capture-label]\nChecks the phone hamburger header, cart above WhatsApp, brand name in the bar, the 5-second infinite home specialties slider and the /menu carousels with the options sheet. Requires an existing local Chromium browser and a running frontend. Writes screenshots to .preview/.';
+const usage = 'Usage: npm run test:mobile -- "<Chromium browser executable>" [http://127.0.0.1:3000] [capture-label]\nChecks the phone hamburger header, cart above WhatsApp, brand name in the bar, the manual home specialties carousel, the rotating hero dish photos and the /menu carousels with the options sheet. Requires an existing local Chromium browser and a running frontend. Writes screenshots to .preview/.';
 if (process.argv.includes('--help')) {
   console.log(usage);
   process.exit(0);
@@ -149,7 +149,8 @@ try {
     }
   }
 
-  // Home specialties: one-row infinite slider, 3 cards from 761px (1 on phones), autoplay every 5s.
+  // Home (odd/tasks/home-hero-specialties.md): manual specialties carousel with hint/arrows, complete photos, and
+  // the hero's dish photos rotating every 5 seconds.
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const dishes = ['Taquiza', 'Carne a la tampiqueña', 'Nachos grandes', 'Combo "mero mero"', 'Flautas', 'Fajitas Quesadillas', 'Tacos (X5)'];
   const openHome = async (width, reduced = false) => {
@@ -157,20 +158,42 @@ try {
     await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:reduced?'reduce':'no-preference'}]});
     const loaded=new Promise(resolve=>events.set('Page.loadEventFired',resolve));await cdp('Page.navigate',{url:new URL('/',target).href});await loaded;
     // The loop clones appear only after hydration; wait for them before measuring.
-    await evaluate(`new Promise((resolve,reject)=>{const end=performance.now()+10000;const check=()=>{if(document.querySelectorAll('.specialty-grid > [data-clone]').length)return resolve(true);if(performance.now()>end)return reject(Error('Infinite slider clones never appeared'));requestAnimationFrame(check)};check()})`);
+    await evaluate(`new Promise((resolve,reject)=>{const end=performance.now()+10000;const check=()=>{if(document.querySelectorAll('.specialty-grid > [data-clone]').length)return resolve(true);if(performance.now()>end)return reject(Error('Infinite carousel clones never appeared'));requestAnimationFrame(check)};check()})`);
     await evaluate(`document.fonts.ready`);
-    await evaluate(`Promise.all([...document.querySelectorAll('.specialty-grid img')].map(i=>{i.loading='eager';return Promise.race([i.decode().catch(()=>{}),new Promise(r=>setTimeout(r,3000))])}))`);
-    // Keep the pointer off the slider so hover never pauses it.
+    await evaluate(`Promise.all([...document.querySelectorAll('.specialty-grid img, .hero-slide')].map(i=>Promise.race([i.decode().catch(()=>{}),new Promise(r=>setTimeout(r,3000))])))`);
     await cdp('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});
-    await evaluate(`document.querySelector('.section-heading').scrollIntoView({block:'start',behavior:'instant'})`);
   };
   // Fully visible card titles, left to right.
-  const state = () => evaluate(`(()=>{const g=document.querySelector('.specialty-grid');const r=g.getBoundingClientRect();const cards=[...g.children];const visible=cards.filter(c=>{const b=c.getBoundingClientRect();return b.left>=r.left-2&&b.right<=r.right+2}).sort((a,b)=>a.getBoundingClientRect().left-b.getBoundingClientRect().left).map(c=>c.querySelector('h3').textContent.trim());const real=cards.filter(c=>!c.hasAttribute('data-clone'));const clones=cards.filter(c=>c.hasAttribute('data-clone'));const b=document.querySelector('.carousel-pause');const first=cards.reduce((best,c)=>Math.abs(c.getBoundingClientRect().left-r.left)<Math.abs(best.getBoundingClientRect().left-r.left)?c:best,cards[0]);return {visible,real:real.length,clones:clones.length,clonesHidden:clones.every(c=>c.getAttribute('aria-hidden')==='true'&&c.inert),firstIsClone:first.hasAttribute('data-clone'),rows:new Set(cards.map(c=>Math.round(c.getBoundingClientRect().top))).size,ratio:real[0].getBoundingClientRect().width/r.width,button:b?b.getBoundingClientRect().height:0,buttonW:b?b.getBoundingClientRect().width:0,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth}})()`);
+  const state = () => evaluate(`(()=>{const g=document.querySelector('.specialty-grid');const r=g.getBoundingClientRect();const cards=[...g.children];const visible=cards.filter(c=>{const b=c.getBoundingClientRect();return b.left>=r.left-2&&b.right<=r.right+2}).sort((a,b)=>a.getBoundingClientRect().left-b.getBoundingClientRect().left).map(c=>c.querySelector('h3').textContent.trim());const real=cards.filter(c=>!c.hasAttribute('data-clone'));const clones=cards.filter(c=>c.hasAttribute('data-clone'));const first=cards.reduce((best,c)=>Math.abs(c.getBoundingClientRect().left-r.left)<Math.abs(best.getBoundingClientRect().left-r.left)?c:best,cards[0]);const hint=document.querySelector('.specialty-hint');const arrows=[...document.querySelectorAll('.specialty-arrow')].filter(a=>a.getBoundingClientRect().width>0);const photos=real.map(c=>c.querySelector('img')).filter(i=>i&&!i.classList.contains('dish-logo')).map(i=>{const b=i.getBoundingClientRect();return {ratio:b.width/b.height,natural:i.naturalWidth/i.naturalHeight,fit:getComputedStyle(i).objectFit}});return {visible,real:real.length,clones:clones.length,clonesHidden:clones.every(c=>c.getAttribute('aria-hidden')==='true'&&c.inert),firstIsClone:first.hasAttribute('data-clone'),rows:new Set(cards.map(c=>Math.round(c.getBoundingClientRect().top))).size,ratio:real[0].getBoundingClientRect().width/r.width,hint:hint&&hint.getBoundingClientRect().height>0?hint.textContent.trim():'',arrows:arrows.map(a=>Math.round(a.getBoundingClientRect().width)),pause:Boolean(document.querySelector('.carousel-pause')),photos,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth}})()`);
   const waitFirst = (title, ms) => evaluate(`new Promise((resolve,reject)=>{const g=document.querySelector('.specialty-grid');const end=performance.now()+${ms};const check=()=>{const r=g.getBoundingClientRect();const v=[...g.children].filter(c=>{const b=c.getBoundingClientRect();return b.left>=r.left-2&&b.right<=r.right+2}).sort((a,b)=>a.getBoundingClientRect().left-b.getBoundingClientRect().left);if(v[0]&&v[0].querySelector('h3').textContent.trim()===${JSON.stringify(title)})return resolve(true);if(performance.now()>end)return reject(new Error('first visible '+(v[0]&&v[0].querySelector('h3').textContent.trim())+' instead of '+${JSON.stringify(title)}));requestAnimationFrame(check)};check()})`);
-  // Instantly park the slider on a real (non-clone) card.
+  // Instantly park the carousel on a real (non-clone) card.
   const parkAt = index => evaluate(`(()=>{const g=document.querySelector('.specialty-grid');const cards=[...g.children];const card=cards.filter(c=>!c.hasAttribute('data-clone'))[${index}];g.style.scrollBehavior='auto';g.scrollLeft=card.offsetLeft-cards[0].offsetLeft;g.style.scrollBehavior='';})()`);
+  const heroActive = () => evaluate(`document.querySelector('.hero-slide.is-active')?.getAttribute('src')||''`);
   for (const [width, perView, step] of [[1440, 3, 2], [800, 3, 2], [375, 1, 1]]) {
     await openHome(width);
+    // Hero: one visible dish photo that changes after ~5 s and stops when paused.
+    const hero = await evaluate(`(()=>{const slides=[...document.querySelectorAll('.hero-slide')];const p=document.querySelector('.hero-pause').getBoundingClientRect();return {count:slides.length,visible:slides.filter(s=>getComputedStyle(s).opacity>0.5).length,pause:[Math.round(p.width),Math.round(p.height)]}})()`);
+    assert.equal(hero.count, 6, `${width}: six hero dish photos`);
+    assert.equal(hero.visible, 1, `${width}: one hero photo visible at a time`);
+    assert.ok(hero.pause[0] >= 44 && hero.pause[1] >= 44, `${width}: 44px hero pause control`);
+    // The timer starts at hydration, so sync on one change and then time the interval to the next one.
+    const nextHero = (from, ms) => evaluate(`new Promise((resolve,reject)=>{const end=performance.now()+${ms};const check=()=>{const src=document.querySelector('.hero-slide.is-active')?.getAttribute('src')||'';if(src!==${JSON.stringify(from)})return resolve(src);if(performance.now()>end)return reject(Error('hero photo never changed'));requestAnimationFrame(check)};check()})`);
+    const firstHero = await nextHero(await heroActive(), 7000);
+    const h0 = Date.now();
+    await sleep(3800);
+    assert.equal(await heroActive(), firstHero, `${width}: hero photo holds before 5 seconds`);
+    await nextHero(firstHero, 4000);
+    const heroElapsed = Date.now() - h0;
+    assert.ok(heroElapsed >= 4500 && heroElapsed <= 7500, `${width}: hero changes after ~5s (${heroElapsed}ms)`);
+    await evaluate(`document.querySelector('.hero-pause').click()`);
+    await wait(`document.querySelector('.hero-pause').getAttribute('aria-pressed')==='true'`);
+    const pausedHero = await heroActive();
+    await sleep(6000);
+    assert.equal(await heroActive(), pausedHero, `${width}: paused hero photo stays put`);
+    const heroShot=await cdp('Page.captureScreenshot',{format:'png'});writeFileSync(path.join(output,`home-hero-${width}.png`),Buffer.from(heroShot.data,'base64'));
+    // Specialties: manual only, swipe hint, desktop arrows, complete photos, infinite loop.
+    await evaluate(`document.querySelector('.section-heading').scrollIntoView({block:'start',behavior:'instant'})`);
+    await cdp('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});
     let s = await state();
     assert.equal(s.overflow, false, `${width}: no page overflow`);
     assert.equal(s.rows, 1, `${width}: a single horizontal row`);
@@ -179,37 +202,39 @@ try {
     assert.equal(s.firstIsClone, false, `${width}: starts on the real first card`);
     assert.deepEqual(s.visible, dishes.slice(0, perView), `${width}: ${perView} card(s) per view starting with Taquiza`);
     if (perView === 1) assert.ok(s.ratio > .75 && s.ratio < .95, `${width}: one large card with the next peeking (${s.ratio})`);
-    assert.ok(s.button >= 44 && s.buttonW >= 44, `${width}: visible 44px pause control`);
-    const t0 = Date.now();
-    await sleep(3800);
-    assert.deepEqual((await state()).visible, dishes.slice(0, perView), `${width}: no move before 5 seconds`);
-    await waitFirst(dishes[step], 4000);
-    const elapsed = Date.now() - t0;
-    assert.ok(elapsed >= 4500 && elapsed <= 7500, `${width}: advances by ${step} after ~5s (${elapsed}ms)`);
-    const shot=await cdp('Page.captureScreenshot',{format:'png'});writeFileSync(path.join(output,`home-slider-${width}.png`),Buffer.from(shot.data,'base64'));
-    // Infinite: from the last real card it keeps moving forward into Taquiza, then stays on real cards.
+    assert.equal(s.hint, 'Desliza para ver más productos', `${width}: swipe hint below the carousel`);
+    assert.equal(s.pause, false, `${width}: no pause control on a carousel that does not move by itself`);
+    assert.deepEqual(s.arrows, perView === 1 ? [] : [44, 44], `${width}: arrows only from 761px`);
+    assert.ok(s.photos.length >= 6 && s.photos.every(p => Math.abs(p.ratio - p.natural) < .03 || p.fit === 'contain'), `${width}: complete specialty photos ${JSON.stringify(s.photos.slice(0, 2))}`);
+    await sleep(6000);
+    assert.deepEqual((await state()).visible, dishes.slice(0, perView), `${width}: the carousel never moves by itself`);
+    if (perView > 1) {
+      await evaluate(`document.querySelector('.specialty-arrow-next').click()`);
+      await waitFirst(dishes[step], 3000);
+      await evaluate(`document.querySelector('.specialty-arrow-prev').click()`);
+      await waitFirst(dishes[0], 3000);
+    } else {
+      await evaluate(`document.querySelector('.specialty-grid').scrollBy({left:document.querySelector('.specialty-grid > :not([data-clone])').getBoundingClientRect().width,behavior:'instant'})`);
+      await waitFirst(dishes[1], 3000);
+    }
+    const shot=await cdp('Page.captureScreenshot',{format:'png'});writeFileSync(path.join(output,`home-specialties-${width}.png`),Buffer.from(shot.data,'base64'));
+    // Infinite: from the last real card the row keeps going forward into Taquiza, then re-anchors on real cards.
     await parkAt(6);
     await sleep(400);
-    s = await state();
-    assert.deepEqual(s.visible, [...dishes, ...dishes].slice(6, 6 + perView), `${width}: the row wraps seamlessly after Tacos`);
-    await waitFirst(dishes[(6 + step) % 7], 6500);
+    assert.deepEqual((await state()).visible, [...dishes, ...dishes].slice(6, 6 + perView), `${width}: the row wraps seamlessly after Tacos`);
+    if (perView > 1) { await evaluate(`document.querySelector('.specialty-arrow-next').click()`); await waitFirst(dishes[(6 + step) % 7], 3000); }
+    else { await evaluate(`document.querySelector('.specialty-grid').scrollBy({left:document.querySelector('.specialty-grid > :not([data-clone])').getBoundingClientRect().width,behavior:'instant'})`); await waitFirst(dishes[0], 3000); }
     await sleep(600);
-    assert.equal((await state()).firstIsClone, false, `${width}: after wrapping the slider re-anchors on real cards`);
-    // Pause stops the autoplay.
-    await evaluate(`document.querySelector('.carousel-pause').click()`);
-    await wait(`document.querySelector('.carousel-pause').textContent.startsWith('Reanudar')`);
-    const pausedAt = (await state()).visible;
-    await sleep(6500);
-    assert.deepEqual((await state()).visible, pausedAt, `${width}: paused slider stays put`);
-    console.log(`PASS ${width}px: one row, ${perView} per view, advances ${step} at ~${elapsed}ms, infinite wrap, pause holds`);
+    assert.equal((await state()).firstIsClone, false, `${width}: after wrapping the carousel re-anchors on real cards`);
+    console.log(`PASS ${width}px: hero rotates at ~${heroElapsed}ms and pauses; specialties manual (${perView} per view), hint, ${perView > 1 ? 'arrows, ' : ''}complete photos, infinite wrap`);
   }
   for (const width of [375, 1440]) {
     await openHome(width, true);
-    const reduced = await state();
-    assert.equal(reduced.button, 0, `${width}: no pause control when reduced motion disables autoplay`);
+    const first = await heroActive();
+    assert.equal(await evaluate(`Boolean(document.querySelector('.hero-pause'))`), false, `${width}: no hero pause control when reduced motion keeps the photo still`);
     await sleep(6000);
-    assert.equal((await state()).visible[0], 'Taquiza', `${width}: reduced motion: no autoplay`);
-    console.log(`PASS ${width}px reduced motion: swipe only, no autoplay`);
+    assert.equal(await heroActive(), first, `${width}: reduced motion: hero photo stays still`);
+    console.log(`PASS ${width}px reduced motion: still hero photo, manual specialties`);
   }
 
   // /menu carousels, Ver más, direct + and options sheet (mobile-menu-carousel S3-S7).

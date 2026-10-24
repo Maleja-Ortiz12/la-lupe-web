@@ -14,6 +14,7 @@ export function telUrl(phone: string) {
 export const whatsappMessages = {
   order: 'Hola La Lupe, quiero hacer un pedido.',
   info: 'Hola La Lupe, quiero más información.',
+  catering: 'Hola La Lupe, quiero cotizar catering para una fiesta en casa.',
 } as const;
 
 export function whatsappUrl(number: string, message: string) {
