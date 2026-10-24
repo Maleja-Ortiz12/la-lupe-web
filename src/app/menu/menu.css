@@ -351,6 +351,34 @@ html { scrollbar-gutter: stable; }
   .m-add:active { transform: scale(.94); }
 }
 
+/* Keep mobile category navigation available while browsing, without changing the desktop sidebar. */
+@media (max-width: 760px) {
+  .menu-catalog-compact .menu-category-nav {
+    position: sticky; top: 0; z-index: 25; align-self: start;
+    display: block; min-width: 0;
+    width: calc(100% + 2 * var(--space-page)); margin-inline: calc(-1 * var(--space-page));
+    padding: .6rem var(--space-page) .65rem;
+    background: linear-gradient(#fff8e855, #f8e9c922), #f8e9c9 url('/reference/paper-seamless.webp') repeat;
+    border-block: 1px solid #d3b27c; box-shadow: 0 4px 12px #57341620;
+  }
+  .menu-category-heading { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: .4rem; color: #765434; font-size: .7rem; line-height: 1.3; }
+  .menu-category-heading > span:first-child { color: #4b3021; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  .menu-category-heading > span:last-child { white-space: nowrap; }
+  .menu-category-heading > span:last-child span { margin-left: .2rem; color: #ad2119; }
+  .menu-category-strip { display: flex; align-items: center; gap: .45rem; overflow-x: auto; overscroll-behavior-x: contain; padding: .15rem 2px .25rem; scrollbar-width: none; }
+  .menu-category-strip::-webkit-scrollbar { display: none; }
+  .menu-category-nav a { flex: 0 0 auto; gap: .4rem; min-height: 44px; padding: .45rem .75rem; border-color: #cfb68a; border-radius: .7rem; background: #fffaf0d9; color: #563a26; font-size: .87rem; font-weight: 500; line-height: 1.2; text-transform: none; white-space: nowrap; box-shadow: 0 1px 2px #5734160d; }
+  .menu-category-icon { flex: 0 0 19px; width: 19px; height: 19px; }
+  .menu-category-nav a:hover, .menu-category-nav a:focus-visible { background: #f5e6cd; border-color: #bb985f; color: #563a26; text-decoration: none; }
+  .menu-category-nav a[aria-current='location'] { background: #b6241b; border-color: #a51d15; color: #fff8e7; box-shadow: 0 2px 5px #8b241b26; }
+  .menu-category-nav a:focus-visible { outline-offset: -3px; outline-color: #146979; }
+  .menu-products > [id], .menu-products .dish-card[id] { scroll-margin-top: 7.5rem; }
+}
+/* The cart remains in its existing upper-right location on small tablets; reserve its own lane. */
+@media (min-width: 701px) and (max-width: 760px) {
+  .menu-catalog-compact .menu-category-nav { padding-right: calc(var(--space-page) + 76px); }
+}
+
 /* Options bottom sheet (opened from the + of dishes with variations). */
 .options-sheet { position: fixed; inset: auto 0 0 0; margin: 0; width: 100%; max-width: 100%; max-height: 88dvh; overflow-y: auto; overscroll-behavior: contain; padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom)); border: 1px solid #d2b477; border-radius: 1.1rem 1.1rem 0 0; color: #27190f; background: #fff4db; box-shadow: 0 -12px 40px #27190f55; }
 .options-sheet::backdrop { background: #27190f80; }

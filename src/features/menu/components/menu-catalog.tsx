@@ -7,6 +7,7 @@ import { Flourish } from '@/features/presentation/components/flourish';
 import { WhatsAppLink } from '@/features/presentation/components/whatsapp-link';
 import { menuCategories, starItems, formatPrice, hasOptions, startingPrice, itemOptions, requiredPicks, type MenuChoiceOption, type MenuItem } from '../menu-data';
 import { MenuSidebar } from './menu-sidebar';
+import { MobileCategoryNav } from './mobile-category-nav';
 import { CateringService } from '@/features/presentation/components/catering-service';
 import { addToCart, changeQuantity, removeFromCart, cartHasPendingPrices, cartSubtotal, cartWhatsAppUrl, lineTotalLabel, menuProducts, productId, type CartLine } from '../cart';
 
@@ -274,11 +275,7 @@ export function MenuCatalog({ whatsappNumber }: { whatsappNumber: string }) {
   return (
     <div className="container menu-catalog menu-catalog-compact">
       {!whatsappNumber && <p id="menu-status" className="menu-status">Número de WhatsApp pendiente de confirmación.</p>}
-      <nav className="menu-category-nav" aria-label="Categorías del menú">
-        <a href="#platos-estrella"><span aria-hidden="true">★ </span>Estrella</a>
-        {menuCategories.map(category => <a key={category.id} href={`#${category.id}`}>{category.title}</a>)}
-        <a href="#catering">Catering</a>
-      </nav>
+      <MobileCategoryNav sections={sidebarSections} />
       <button ref={cartButton} type="button" className="cart-jump" aria-haspopup="dialog" aria-controls="tu-pedido" aria-expanded={cartOpen} onClick={showCart}><CartIcon /><span className="cart-count" aria-hidden="true">{itemCount}</span><span className="visually-hidden">Ver carrito ({itemCount})</span></button>
       <p className="visually-hidden" role="status">{announcement}</p>
       <p className={`cart-feedback${feedback ? ' is-visible' : ''}`} role="status" aria-atomic="true">{feedback ? 'Agregado al carrito con éxito' : ''}</p>

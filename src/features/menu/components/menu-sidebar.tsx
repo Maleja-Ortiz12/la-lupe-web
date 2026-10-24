@@ -19,6 +19,11 @@ const icons: Record<string, string> = {
   catering: 'M3 18h18M5 18a7 7 0 0 1 14 0M12 9V7M10 7h4',
 };
 
+// Mobile navigation uses the same pictograms without changing the desktop sidebar markup.
+export function MenuCategoryIcon({ id }: { id: string }) {
+  return <svg className="menu-category-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={icons[id] ?? icons['platos-estrella']} /></svg>;
+}
+
 // Sticky desktop navigation that marks the section currently in view (phones use the pill navigation).
 export function MenuSidebar({ sections }: { sections: readonly SidebarSection[] }) {
   const [current, setCurrent] = useState(sections[0]?.id);

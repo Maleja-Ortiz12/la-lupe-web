@@ -388,11 +388,17 @@ a.whatsapp-float-button { cursor: pointer; }
 .catering-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; margin: 0; padding: 0; list-style: none; }
 .catering-gallery img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: cover; border-radius: .7rem; box-shadow: 0 3px 10px #57341633; }
 @media (max-width: 760px) {
-  .catering-inner { padding: 1rem; }
-  .catering-copy .flourish { font-size: 2rem; }
-  /* Phones: the photos become a swipeable row with the next one peeking. */
-  .catering-gallery { display: flex; gap: .7rem; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
-  .catering-gallery li { flex: 0 0 70%; scroll-snap-align: start; }
+  .catering-inner { grid-template-columns: minmax(0, 1fr); gap: 1.75rem; padding: 1.5rem 1.2rem; }
+  .catering-copy { min-width: 0; gap: 1rem; }
+  .catering-copy > p { font-size: 1rem; line-height: 1.65; }
+  .catering-copy .catering-kicker { max-width: 100%; padding: .35rem .65rem; font-size: .68rem; line-height: 1.5; letter-spacing: .04em; }
+  .catering-copy h2, .catering-copy .flourish { width: 100%; font-size: clamp(2rem, 7vw, 2.45rem); line-height: 1.15; }
+  .catering-copy h2.flourish { justify-content: flex-start; gap: .35rem; text-align: left; }
+  .catering-copy h2 .flourish-garnish { flex: 0 0 22px; width: 22px; }
+  .catering-cta { width: 100%; min-height: 54px; margin-top: .35rem; padding: .7rem .65rem; font-size: 1.4rem; }
+  /* Separate the swipeable gallery from the copy instead of squeezing both into one row. */
+  .catering-gallery { display: flex; min-width: 0; gap: 1rem; padding-top: 1rem; border-top: 1px solid #d9bd8b; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: thin; scrollbar-color: #c79b55 transparent; }
+  .catering-gallery li { flex: 0 0 min(78%, 320px); min-width: 0; scroll-snap-align: start; }
   .catering-gallery::-webkit-scrollbar { display: none; }
 }
 
